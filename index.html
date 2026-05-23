@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<title>דו-קרב מספרים</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+:root {
+  --bg: #000000; --surface: #16171b; --surface-2: #1f2125; --surface-3: #2a2d33;
+  --text: #ffffff; --text-dim: #c3ced8; --text-muted: #7a808a;
+  --purple: #6164ff; --purple-light: #8a99ff; --purple-glow: rgba(97, 100, 255, 0.35);
+  --red: #ff3d57; --yellow: #ffcb00; --green: #00c875;
+  --border: rgba(255, 255, 255, 0.10); --border-strong: rgba(255, 255, 255, 0.22);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%; width: 100%; overflow: hidden;
+  font-family: 'Heebo', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 400; background: var(--bg); color: var(--text);
+  -webkit-user-select: none; user-select: none; overscroll-behavior: none;
+  touch-action: manipulation;
+}
+input, button, textarea, select { font-family: inherit; font-weight: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; overflow: hidden; }
+.atmos { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.atmos::before, .atmos::after {
+  content: ""; position: absolute; width: 70vmax; height: 70vmax;
+  border-radius: 50%; filter: blur(80px); opacity: 0.35;
+}
+.atmos::before { background: radial-gradient(circle, var(--purple), transparent 60%); top: -30vmax; right: -20vmax; }
+.atmos::after { background: radial-gradient(circle, #ff3d57, transparent 60%); bottom: -35vmax; left: -25vmax; opacity: 0.18; }
+.screen {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  z-index: 1; opacity: 0; pointer-events: none;
+  transition: opacity 0.4s ease; overflow-y: auto; overflow-x: hidden;
+}
+.screen.active { opacity: 1; pointer-events: auto; }
+.screen.entering { animation: screenEnter 0.4s ease; }
+@keyframes screenEnter {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+.brand-row { display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; flex-shrink: 0; }
+.brand { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); letter-spacing: 0.02em; }
+.brand-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 12px var(--purple-glow); }
+.room-pill { font-size: 12px; color: var(--text-muted); background: var(--surface); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.home-content {
+  flex: 1; display: flex; flex-direction: column; justify-content: center;
+  align-items: stretch; gap: 24px; max-width: 480px; width: 100%; margin: 0 auto; padding: 12px 0;
+}
+.logo { text-align: center; }
+.logo-mark {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 13px; color: var(--purple-light); margin-bottom: 16px;
+  letter-spacing: 0.12em; font-weight: 600;
+}
+.logo-mark::before, .logo-mark::after { content: ""; width: 24px; height: 1px; background: var(--purple); opacity: 0.4; }
+.logo-title { font-size: clamp(40px, 12vw, 64px); font-weight: 800; line-height: 0.95; letter-spacing: -0.02em; }
+.logo-title .accent { color: var(--purple); }
+.logo-tag { margin-top: 14px; color: var(--text-dim); font-size: 15px; line-height: 1.5; max-width: 320px; margin-left: auto; margin-right: auto; }
+.home-actions { display: flex; flex-direction: column; gap: 12px; }
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 16px 22px; border-radius: 14px; font-size: 16px; font-weight: 600;
+  transition: transform 0.12s ease, background 0.2s ease, opacity 0.2s ease;
+  width: 100%; border: 1px solid transparent;
+}
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; pointer-events: none; }
+.btn-primary { background: var(--purple); color: white; box-shadow: 0 8px 24px -8px var(--purple-glow); }
+.btn-primary:hover { background: var(--purple-light); }
+.btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
+.btn-secondary:hover { background: var(--surface-2); }
+.btn-ghost { background: transparent; color: var(--text-dim); padding: 10px; font-size: 14px; }
+.btn-ghost:hover { color: var(--text); }
+.divider { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 11px; letter-spacing: 0.15em; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 22px; max-width: 480px; width: 100%; margin: 0 auto;
+}
+.panel-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.panel-sub { color: var(--text-dim); font-size: 14px; margin-bottom: 22px; }
+.name-input, .text-input, .code-input {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px; font-size: 16px;
+  color: var(--text); outline: none;
+  transition: border 0.2s ease, background 0.2s ease;
+  text-align: right;
+}
+.name-input:focus, .text-input:focus, .code-input:focus { border-color: var(--purple); background: var(--surface-3); }
+.name-input::placeholder, .text-input::placeholder { color: var(--text-muted); }
+.code-display { text-align: center; margin: 8px 0 18px; }
+.code-label { font-size: 12px; color: var(--text-muted); letter-spacing: 0.15em; margin-bottom: 8px; }
+.code-value { font-size: 32px; font-weight: 800; color: var(--purple); letter-spacing: 0.1em; font-variant-numeric: tabular-nums; text-shadow: 0 0 32px var(--purple-glow); word-break: break-all; }
+.code-input { padding: 16px; font-size: 18px; text-align: center; letter-spacing: 0.04em; font-weight: 600; direction: ltr; }
+.field-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.field-label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+.mode-toggle { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; gap: 4px; }
+.mode-option { padding: 10px; border-radius: 8px; text-align: center; font-size: 13px; color: var(--text-dim); transition: all 0.2s ease; cursor: pointer; }
+.mode-option.active { background: var(--purple); color: white; }
+.mode-option .mode-label { font-weight: 700; font-size: 14px; display: block; margin-bottom: 2px; }
+
+/* Categories & difficulty pickers */
+.cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 6px; }
+.cat-chip {
+  padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 8px; font-size: 12px; text-align: center; cursor: pointer;
+  transition: all 0.15s ease; font-weight: 500;
+}
+.cat-chip.selected { background: rgba(97, 100, 255, 0.18); border-color: var(--purple); color: var(--purple-light); }
+.cat-chip.all-toggle { grid-column: span 2; background: var(--surface-3); border-color: var(--border-strong); }
+.cat-chip.all-toggle.selected { background: var(--purple); border-color: var(--purple); color: white; }
+
+.diff-row { display: flex; gap: 6px; margin-bottom: 6px; }
+.diff-row .cat-chip { flex: 1; }
+.diff-chip.selected { background: rgba(0, 200, 117, 0.18); border-color: var(--green); color: var(--green); }
+.diff-chip.selected[data-diff="בינוני"] { background: rgba(255, 203, 0, 0.18); border-color: var(--yellow); color: var(--yellow); }
+.diff-chip.selected[data-diff="קשה"] { background: rgba(255, 61, 87, 0.18); border-color: var(--red); color: var(--red); }
+
+/* Lobby */
+.lobby-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: stretch; max-width: 480px; width: 100%; margin: 0 auto; gap: 18px; }
+.lobby-players { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.player-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px 12px; text-align: center; transition: all 0.3s ease; }
+.player-card.you { border-color: var(--purple); background: linear-gradient(180deg, rgba(97,100,255,0.12), var(--surface)); }
+.player-card.empty { border-style: dashed; opacity: 0.6; }
+.player-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-3); margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: var(--text); }
+.player-card.you .player-avatar { background: var(--purple); }
+.player-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-status { font-size: 11px; color: var(--text-muted); letter-spacing: 0.08em; }
+.player-status.ready { color: var(--green); }
+.player-status.waiting { color: var(--yellow); }
+.share-row { display: flex; gap: 8px; align-items: stretch; }
+.share-row .btn { flex: 1; padding: 12px; font-size: 13px; }
+.dots { display: inline-flex; gap: 4px; margin-right: 4px; }
+.dots span { width: 4px; height: 4px; border-radius: 50%; background: currentColor; animation: dotpulse 1.4s infinite ease-in-out both; }
+.dots span:nth-child(1) { animation-delay: -0.32s; } .dots span:nth-child(2) { animation-delay: -0.16s; }
+@keyframes dotpulse { 0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+
+/* GAME SCREEN - reorganized so keypad doesn't cover input */
+.game-screen { padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+.game-top { flex-shrink: 0; }
+
+/* HUD - Always-visible large score */
+.game-hud {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px;
+  align-items: stretch; margin-bottom: 10px;
+}
+.hud-player { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.hud-player.you { border-color: var(--purple); background: linear-gradient(180deg, rgba(97,100,255,0.12), var(--surface)); }
+.hud-name { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.hud-score-row { display: flex; align-items: baseline; gap: 4px; }
+.hud-score { font-size: 32px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.hud-target { font-size: 11px; color: var(--text-muted); margin-right: 2px; }
+.hud-stars { font-size: 11px; color: var(--yellow); letter-spacing: 0.05em; }
+.hud-vs { font-size: 11px; color: var(--text-muted); letter-spacing: 0.15em; font-weight: 700; align-self: center; padding: 0 4px; }
+.hud-score.pulse-up { animation: scorepulse 0.6s ease; }
+@keyframes scorepulse {
+  0% { transform: scale(1); color: var(--green); }
+  50% { transform: scale(1.4); color: var(--green); }
+  100% { transform: scale(1); }
+}
+
+/* Timer */
+.timer-zone {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 8px 12px;
+}
+.timer-zone.urgent { border-color: var(--yellow); background: linear-gradient(90deg, rgba(255,203,0,0.08), var(--surface)); }
+.timer-zone.danger { border-color: var(--red); background: linear-gradient(90deg, rgba(255,61,87,0.12), var(--surface)); animation: pulseRed 1s infinite; }
+.timer-zone.pressure { border-color: var(--red); background: linear-gradient(90deg, rgba(255,61,87,0.18), var(--surface)); animation: pulseRed 0.8s infinite; }
+@keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 61, 87, 0); } 50% { box-shadow: 0 0 0 6px rgba(255, 61, 87, 0.2); } }
+
+.timer-num-large {
+  font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums;
+  min-width: 50px; text-align: center; line-height: 1;
+  color: var(--green);
+}
+.timer-zone.urgent .timer-num-large { color: var(--yellow); }
+.timer-zone.danger .timer-num-large, .timer-zone.pressure .timer-num-large { color: var(--red); }
+.timer-info { flex: 1; min-width: 0; }
+.timer-info-top { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+.timer-bar-wrap { height: 6px; background: var(--surface-3); border-radius: 999px; overflow: hidden; }
+.timer-bar { height: 100%; background: var(--green); border-radius: 999px; transition: width 0.1s linear, background 0.3s ease; width: 100%; }
+.timer-bar.warn { background: var(--yellow); }
+.timer-bar.danger { background: var(--red); }
+.timer-bar.pressure { background: var(--red); }
+
+/* Opponent answered banner */
+.opp-banner {
+  background: linear-gradient(90deg, rgba(255, 61, 87, 0.2), rgba(255, 61, 87, 0.05));
+  border: 1px solid var(--red); color: var(--red);
+  padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
+  margin-bottom: 10px; display: none; align-items: center; gap: 8px;
+  animation: bannerSlide 0.4s ease;
+}
+.opp-banner.show { display: flex; }
+@keyframes bannerSlide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.opp-banner .led-pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); animation: ledPulse 1s infinite; }
+@keyframes ledPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; transform: scale(1.3); } }
+
+/* Question card - compact for mobile */
+.question-card {
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(26,28,32,0.5) 100%);
+  border: 1px solid var(--border); border-radius: 14px; padding: 14px 14px;
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; flex-shrink: 0;
+}
+.question-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.chip {
+  font-size: 10px; color: var(--purple-light); background: rgba(97, 100, 255, 0.18);
+  padding: 4px 8px; border-radius: 999px; letter-spacing: 0.03em; font-weight: 700;
+}
+.chip.diff-קל { color: var(--green); background: rgba(0,200,117,0.15); }
+.chip.diff-בינוני { color: var(--yellow); background: rgba(255,203,0,0.15); }
+.chip.diff-קשה { color: var(--red); background: rgba(255,61,87,0.15); }
+.question-text {
+  font-weight: 600; line-height: 1.3; letter-spacing: -0.01em;
+}
+.question-text.short { font-size: clamp(20px, 5.5vw, 26px); }
+.question-text.medium { font-size: clamp(17px, 4.5vw, 22px); }
+.question-text.long { font-size: clamp(15px, 4vw, 19px); line-height: 1.35; }
+.question-unit { color: var(--text-muted); font-size: 12px; margin-top: -2px; }
+
+/* GUESS DISPLAY - prominent, above keypad */
+.guess-section {
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+  transition: border-color 0.3s ease;
+  flex-shrink: 0;
+}
+.guess-section.has-value { border-color: var(--purple); background: linear-gradient(180deg, rgba(97,100,255,0.10), var(--surface)); }
+.guess-section.locked { border-color: var(--green); background: linear-gradient(180deg, rgba(0,200,117,0.10), var(--surface)); }
+
+.guess-label { font-size: 11px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; margin-bottom: 4px; }
+.guess-main { flex: 1; min-width: 0; }
+.guess-value-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.guess-value {
+  font-size: clamp(28px, 8vw, 40px); font-weight: 800;
+  letter-spacing: -0.01em; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.guess-value.placeholder { color: var(--text-muted); font-weight: 500; }
+.guess-value-unit { font-size: 13px; color: var(--text-dim); }
+
+.opp-mini-status { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+.opp-mini-status.ready { color: var(--green); }
+.opp-mini-status .led { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* Keypad - bottom */
+.keypad-zone { margin-top: auto; flex-shrink: 0; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.key {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 0; font-size: 22px; font-weight: 700;
+  color: var(--text); transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
+  font-variant-numeric: tabular-nums; min-height: 50px;
+}
+.key:active { background: var(--surface-3); transform: scale(0.94); border-color: var(--border-strong); }
+.key.key-action { font-size: 18px; color: var(--text-dim); }
+.key.key-submit { background: var(--purple); color: white; border-color: var(--purple); font-size: 15px; font-weight: 700; }
+.key.key-submit:active { background: var(--purple-light); }
+.key.key-submit:disabled { background: var(--surface-2); color: var(--text-muted); border-color: var(--border); }
+
+.skip-row { display: flex; justify-content: center; gap: 8px; align-items: center; }
+.skip-btn {
+  font-size: 11px; color: var(--text-muted); padding: 6px 12px;
+  border-radius: 999px; border: 1px solid var(--border); background: transparent;
+}
+.skip-btn:disabled { opacity: 0.35; }
+.skip-btn:not(:disabled) { color: var(--yellow); border-color: rgba(255, 203, 0, 0.4); }
+.skip-btn:not(:disabled):hover { background: rgba(255, 203, 0, 0.1); }
+
+/* Reveal */
+.reveal-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; max-width: 480px; width: 100%; margin: 0 auto; text-align: center; }
+.reveal-answer-label { font-size: 12px; color: var(--text-muted); letter-spacing: 0.2em; font-weight: 700; }
+.reveal-answer {
+  font-size: clamp(56px, 16vw, 90px); font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums;
+  color: var(--purple); text-shadow: 0 0 40px var(--purple-glow);
+}
+.reveal-unit { font-size: 16px; color: var(--text-dim); margin-top: -4px; }
+.reveal-question { font-size: 15px; color: var(--text-dim); line-height: 1.4; padding: 0 8px; max-width: 380px; }
+.reveal-guesses { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 4px; }
+.guess-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 10px; }
+.guess-card.winner { border-color: var(--green); background: linear-gradient(180deg, rgba(0,200,117,0.12), var(--surface)); }
+.guess-card.bullseye { border-color: var(--yellow); background: linear-gradient(180deg, rgba(255,203,0,0.15), var(--surface)); }
+.guess-card-name { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.guess-card-value { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.guess-card-value.null { color: var(--text-muted); font-size: 13px; }
+.guess-card-diff { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.guess-card-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.05em; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-top: 6px; }
+.badge-win { background: var(--green); color: black; }
+.badge-bullseye { background: var(--yellow); color: black; }
+.reveal-explain { font-size: 13px; color: var(--text-dim); line-height: 1.5; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; }
+.reveal-source { font-size: 12px; color: var(--purple-light); text-decoration: none; border-bottom: 1px dashed var(--purple); padding-bottom: 1px; }
+
+/* End screen */
+.end-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; max-width: 480px; width: 100%; margin: 0 auto; text-align: center; }
+.trophy { font-size: 64px; margin-bottom: -8px; }
+.end-title { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+.end-winner { color: var(--purple); }
+.end-score { font-size: 18px; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; text-align: center; }
+.stat-num { font-size: 22px; font-weight: 800; color: var(--purple); }
+.stat-label { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.review-list { width: 100%; display: flex; flex-direction: column; gap: 6px; max-height: 30vh; overflow-y: auto; padding-left: 4px; }
+.review-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 12px; text-align: right; }
+.review-meta { display: flex; gap: 6px; margin-bottom: 4px; }
+.review-meta .chip { font-size: 9px; padding: 2px 6px; }
+.review-q { color: var(--text); margin-bottom: 4px; line-height: 1.35; }
+.review-a { color: var(--text-muted); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.review-a a { color: var(--purple-light); text-decoration: none; font-size: 11px; flex-shrink: 0; }
+
+/* Toast & modal */
+.toast {
+  position: fixed; bottom: max(24px, env(safe-area-inset-bottom));
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--surface-3); border: 1px solid var(--border-strong);
+  color: var(--text); padding: 12px 20px; border-radius: 999px;
+  font-size: 13px; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 100; max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-bg.show { display: flex; }
+.modal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px 22px; max-width: 460px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.modal-text { font-size: 14px; color: var(--text-dim); margin-bottom: 16px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 10px; margin-top: 14px; }
+.modal-actions .btn { flex: 1; padding: 14px; font-size: 14px; }
+
+/* Countdown overlay - 3...2...1 */
+.countdown-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(12px); z-index: 300;
+  display: none; align-items: center; justify-content: center;
+}
+.countdown-overlay.show { display: flex; }
+.countdown-num {
+  font-size: 180px; font-weight: 800; color: var(--purple);
+  text-shadow: 0 0 60px var(--purple-glow);
+  font-variant-numeric: tabular-nums; line-height: 1;
+  animation: countPop 1s ease forwards;
+}
+@keyframes countPop {
+  0% { opacity: 0; transform: scale(0.5); }
+  20% { opacity: 1; transform: scale(1.1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.85); }
+}
+
+.connection-status { position: fixed; top: 6px; right: 50%; transform: translateX(50%); background: var(--surface); border: 1px solid var(--border); padding: 3px 10px; border-radius: 999px; font-size: 10px; color: var(--text-muted); z-index: 50; }
+.connection-status.connected { color: var(--green); }
+.connection-status.error { color: var(--red); }
+
+.api-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); padding: 8px 12px; background: var(--surface-2); border-radius: 8px; margin-bottom: 12px; }
+.api-status .led { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); }
+.api-status.active .led { background: var(--green); }
+.api-status.active { color: var(--green); }
+.file-input-wrap { position: relative; overflow: hidden; display: inline-block; width: 100%; }
+.file-input-wrap input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+.warning-box { background: rgba(255, 203, 0, 0.08); border: 1px solid rgba(255, 203, 0, 0.3); color: var(--yellow); padding: 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+.info-box { background: rgba(97, 100, 255, 0.08); border: 1px solid rgba(97, 100, 255, 0.3); color: var(--purple-light); padding: 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+.connect-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--surface-3); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.q-loading-text { font-size: 14px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+
+/* Reveal animation for guess card */
+.guess-card.reveal-anim { animation: cardReveal 0.6s ease; }
+@keyframes cardReveal { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Compact mode for small phones */
+@media (max-height: 700px) {
+  .logo-title { font-size: clamp(32px, 10vw, 48px); }
+  .logo-tag { font-size: 13px; margin-top: 10px; }
+  .question-card { padding: 10px 12px; gap: 8px; }
+  .key { padding: 10px 0; min-height: 44px; font-size: 20px; }
+  .hud-score { font-size: 28px; }
+  .timer-num-large { font-size: 26px; }
+  .guess-value { font-size: clamp(24px, 7vw, 34px); }
+}
+
+/* Landscape & desktop optimization */
+@media (orientation: landscape) and (max-height: 600px) {
+  .home-content { gap: 16px; }
+  .logo-title { font-size: clamp(28px, 8vw, 40px); }
+  .logo-mark { margin-bottom: 8px; }
+  .logo-tag { margin-top: 6px; font-size: 12px; }
+}
+@media (min-width: 900px) {
+  .game-screen { max-width: 600px; margin: 0 auto; }
+  .key { padding: 16px 0; min-height: 56px; font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="atmos"></div>
+  <div class="connection-status" id="conn-status">לא מחובר</div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-dot"></span>דו-קרב מספרים</div>
+      <button class="btn-ghost" id="btn-settings">⚙ הגדרות</button>
+    </div>
+    <div class="home-content">
+      <div class="logo">
+        <div class="logo-mark">תחרות · חידון · מספרים</div>
+        <div class="logo-title">דו-קרב<br><span class="accent">מספרים</span></div>
+        <div class="logo-tag">שני שחקנים. מספר אחד. הניחוש הקרוב ביותר מנצח.<br>הגיע ל-5 נקודות בהפרש של 2.</div>
+      </div>
+      <div class="home-actions">
+        <button class="btn btn-primary" id="btn-create">צור חדר חדש</button>
+        <div class="divider">או</div>
+        <button class="btn btn-secondary" id="btn-join">הצטרף לחדר</button>
+        <button class="btn-ghost" id="btn-stats">📊 הסטטיסטיקות שלי</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE -->
+  <div class="screen" id="screen-create">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-dot"></span>צור חדר</div>
+      <button class="btn-ghost" data-back="home">← חזרה</button>
+    </div>
+    <div class="home-content">
+      <div class="panel">
+        <div class="panel-title">יצירת דו-קרב</div>
+        <div class="panel-sub">הגדר את המשחק ושתף את הקוד.</div>
+
+        <div class="field-group">
+          <label class="field-label">השם שלך</label>
+          <input class="name-input" id="create-name" placeholder="הכנס שם" maxlength="20" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">מצב טיימינג</label>
+          <div class="mode-toggle" id="mode-toggle">
+            <div class="mode-option active" data-mode="fixed">
+              <span class="mode-label">קבוע</span>20 שניות
+            </div>
+            <div class="mode-option" data-mode="pressure">
+              <span class="mode-label">לחץ</span>7 שניות מהראשון
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">רמת קושי</label>
+          <div class="diff-row" id="diff-row">
+            <div class="cat-chip diff-chip selected" data-diff="קל">קל</div>
+            <div class="cat-chip diff-chip selected" data-diff="בינוני">בינוני</div>
+            <div class="cat-chip diff-chip selected" data-diff="קשה">קשה</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">ניתן לבחור יותר מאחת. המשחק יתחיל בקל ויעלה בקושי בהדרגה.</div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">קטגוריות</label>
+          <div class="cat-grid" id="cat-grid">
+            <!-- Filled dynamically -->
+          </div>
+        </div>
+
+        <div class="api-status" id="create-api-status">
+          <span class="led"></span>
+          <span id="create-api-label">שאלות ממסד מובנה</span>
+        </div>
+
+        <button class="btn btn-primary" id="btn-do-create">צור חדר</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOIN -->
+  <div class="screen" id="screen-join">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-dot"></span>הצטרף לחדר</div>
+      <button class="btn-ghost" data-back="home">← חזרה</button>
+    </div>
+    <div class="home-content">
+      <div class="panel">
+        <div class="panel-title">הצטרפות לדו-קרב</div>
+        <div class="panel-sub">הזן את קוד החדר ששיתפו איתך.</div>
+
+        <div class="field-group">
+          <label class="field-label">השם שלך</label>
+          <input class="name-input" id="join-name" placeholder="הכנס שם" maxlength="20" autocomplete="off">
+        </div>
+
+        <div class="field-group">
+          <label class="field-label">קוד חדר</label>
+          <input class="code-input" id="join-code" placeholder="duel-xxxx" maxlength="20" autocomplete="off">
+        </div>
+
+        <button class="btn btn-primary" id="btn-do-join">הצטרף</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="screen-lobby">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-dot"></span>חדר המתנה</div>
+      <div class="room-pill" id="lobby-pill">מצב</div>
+    </div>
+    <div class="lobby-content">
+      <div class="code-display">
+        <div class="code-label">קוד חדר</div>
+        <div class="code-value" id="lobby-code">----</div>
+      </div>
+
+      <div class="lobby-players" id="lobby-players"></div>
+
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;line-height:1.5;">
+        <span id="lobby-config-info"></span>
+      </div>
+
+      <div class="share-row">
+        <button class="btn btn-secondary" id="btn-copy-code">העתק קוד</button>
+        <button class="btn btn-secondary" id="btn-share">שתף</button>
+      </div>
+
+      <div id="lobby-waiting" style="text-align:center;color:var(--text-muted);font-size:13px;">
+        ממתין ליריב<span class="dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <button class="btn btn-primary" id="btn-start" disabled>התחל דו-קרב</button>
+      <button class="btn-ghost" id="btn-leave-lobby">צא מהחדר</button>
+    </div>
+  </div>
+
+  <!-- GAME - reorganized layout to avoid keypad obscuring input -->
+  <div class="screen game-screen" id="screen-game">
+    <div class="brand-row game-top">
+      <div class="brand"><span class="brand-dot"></span>במשחק</div>
+      <div class="room-pill"><span id="game-round-pill">סבב 1</span></div>
+    </div>
+
+    <!-- Always-visible large HUD -->
+    <div class="game-hud game-top">
+      <div class="hud-player you" id="hud-me">
+        <div class="hud-name" id="hud-me-name">אתה</div>
+        <div class="hud-score-row">
+          <span class="hud-score" id="hud-me-score">0</span>
+          <span class="hud-target">/ 5</span>
+          <span class="hud-stars" id="hud-me-stars"></span>
+        </div>
+      </div>
+      <div class="hud-vs">VS</div>
+      <div class="hud-player" id="hud-opp">
+        <div class="hud-name" id="hud-opp-name">—</div>
+        <div class="hud-score-row">
+          <span class="hud-score" id="hud-opp-score">0</span>
+          <span class="hud-target">/ 5</span>
+          <span class="hud-stars" id="hud-opp-stars"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer with large seconds display -->
+    <div class="timer-zone game-top" id="timer-zone">
+      <div class="timer-num-large" id="timer-num">20</div>
+      <div class="timer-info">
+        <div class="timer-info-top" id="timer-label">שניות נותרו</div>
+        <div class="timer-bar-wrap">
+          <div class="timer-bar" id="timer-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opponent answered alert banner -->
+    <div class="opp-banner game-top" id="opp-banner">
+      <div class="led-pulse"></div>
+      <span id="opp-banner-text">היריב ענה! נותרו 7 שניות</span>
+    </div>
+
+    <!-- Question card -->
+    <div class="question-card game-top">
+      <div class="question-meta">
+        <div class="chip" id="q-category">קטגוריה</div>
+        <div class="chip diff-בינוני" id="q-difficulty">בינוני</div>
+      </div>
+      <div class="question-text short" id="q-text">טוען...</div>
+      <div class="question-unit" id="q-unit"></div>
+    </div>
+
+    <!-- Guess display - always above keypad, never covered -->
+    <div class="guess-section game-top" id="guess-section">
+      <div class="guess-main">
+        <div class="guess-label">הניחוש שלך:</div>
+        <div class="guess-value-row">
+          <div class="guess-value placeholder" id="guess-value">—</div>
+          <div class="guess-value-unit" id="guess-unit"></div>
+        </div>
+      </div>
+      <div class="opp-mini-status" id="opp-mini-status">
+        <span class="led"></span>
+        <span id="opp-mini-text">היריב חושב...</span>
+      </div>
+    </div>
+
+    <!-- Keypad at bottom -->
+    <div class="keypad-zone">
+      <div class="keypad" id="keypad">
+        <button class="key" data-k="1">1</button>
+        <button class="key" data-k="2">2</button>
+        <button class="key" data-k="3">3</button>
+        <button class="key" data-k="4">4</button>
+        <button class="key" data-k="5">5</button>
+        <button class="key" data-k="6">6</button>
+        <button class="key" data-k="7">7</button>
+        <button class="key" data-k="8">8</button>
+        <button class="key" data-k="9">9</button>
+        <button class="key key-action" data-k="back">⌫</button>
+        <button class="key" data-k="0">0</button>
+        <button class="key key-submit" id="key-submit" disabled>שלח</button>
+      </div>
+
+      <div class="skip-row">
+        <button class="skip-btn" id="btn-skip" disabled>★★★ דלג על שאלה (3 כוכבים)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVEAL -->
+  <div class="screen" id="screen-reveal">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-dot"></span>חשיפה</div>
+      <div class="room-pill"><span id="reveal-round-pill">סבב 1</span></div>
+    </div>
+    <div class="reveal-content">
+      <div class="reveal-answer-label">התשובה</div>
+      <div class="reveal-answer" id="reveal-answer">0</div>
+      <div class="reveal-unit" id="reveal-unit"></div>
+      <div class="reveal-question" id="reveal-question"></div>
+
+      <div class="reveal-guesses" id="reveal-guesses"></div>
+
+      <div class="reveal-explain" id="reveal-explain"></div>
+      <a class="reveal-source" id="reveal-source" target="_blank" rel="noopener">קישור למקור ↗</a>
+
+      <button class="btn btn-primary" id="btn-next" style="margin-top:8px;">סבב הבא →</button>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div class="screen" id="screen-end">
+    <div class="brand-row">
+      <div class="brand"><span class="brand-dot"></span>סיכום</div>
+    </div>
+    <div class="end-content">
+      <div class="trophy" id="end-trophy">🏆</div>
+      <div class="end-title"><span id="end-winner-name" class="end-winner">שחקן</span><br>ניצח את הדו-קרב</div>
+      <div class="end-score" id="end-score">5 — 3</div>
+
+      <div class="stats-row" id="match-stats">
+        <div class="stat-card"><div class="stat-num" id="stat-rounds">0</div><div class="stat-label">סבבים</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-bullseyes">0</div><div class="stat-label">פגיעות מדויקות</div></div>
+        <div class="stat-card"><div class="stat-num" id="stat-skips">0</div><div class="stat-label">דילוגים שלך</div></div>
+      </div>
+
+      <div style="width:100%;text-align:right;font-size:12px;color:var(--text-muted);letter-spacing:0.05em;font-weight:600;margin-top:4px;">סיכום המשחק</div>
+      <div class="review-list" id="review-list"></div>
+
+      <button class="btn btn-primary" id="btn-rematch">משחק חוזר</button>
+      <button class="btn btn-secondary" id="btn-home">חזרה לבית</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="modal-bg" id="modal">
+    <div class="modal">
+      <div class="modal-title" id="modal-title"></div>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Countdown overlay -->
+  <div class="countdown-overlay" id="countdown-overlay">
+    <div class="countdown-num" id="countdown-num">3</div>
+  </div>
+</div>
+<script>
+// ============================================================
+// EMBEDDED QUESTIONS DATABASE (placeholder - replaced at build time)
+// ============================================================
+const EMBEDDED_QUESTIONS = [{"id": "wr1", "category": "שיאי עולם", "difficulty": "קל", "question": "מה הגובה של הר האוורסט במטרים?", "answer": 8849, "unit": "מטרים", "explanation": "הגובה הרשמי נקבע ב-2020 על ידי נפאל וסין.", "source": "https://www.guinnessworldrecords.com/world-records/highest-mountain"}, {"id": "wr2", "category": "שיאי עולם", "difficulty": "בינוני", "question": "כמה פעמים ניתן לקפל דף נייר לשניים לפי השיא הרשמי?", "answer": 12, "unit": "קיפולים", "explanation": "בריטני גליבן קיפלה דף 12 פעמים ב-2002.", "source": "https://www.guinnessworldrecords.com/"}, {"id": "wr3", "category": "שיאי עולם", "difficulty": "קל", "question": "עד איזה גיל חיה ז'אן קלמן, האדם המבוגר ביותר שתועד?", "answer": 122, "unit": "שנים", "explanation": "ז'אן קלמן חיה עד גיל 122 שנים ו-164 ימים, נפטרה ב-1997.", "source": "https://www.guinnessworldrecords.com/world-records/oldest-person-female"}, {"id": "wr4", "category": "שיאי עולם", "difficulty": "בינוני", "question": "מה הגובה של בורג' חליפה במטרים?", "answer": 828, "unit": "מטרים", "explanation": "המגדל הגבוה בעולם בדובאי, נחנך ב-2010.", "source": "https://www.guinnessworldrecords.com/world-records/tallest-building"}, {"id": "wr5", "category": "שיאי עולם", "difficulty": "קשה", "question": "מה אורך הגשר הארוך בעולם בק\"מ (דאנינג-קונשאן)?", "answer": 165, "unit": "ק\"מ", "explanation": "הגשר הארוך בעולם נמצא בסין, חלק מקו רכבת מהיר.", "source": "https://www.guinnessworldrecords.com/world-records/longest-bridge"}, {"id": "wr6", "category": "שיאי עולם", "difficulty": "קל", "question": "באיזו שנה התחילה גינס לפרסם את שיאי העולם?", "answer": 1955, "unit": "שנה", "explanation": "המהדורה הראשונה פורסמה ב-1955.", "source": "https://www.guinnessworldrecords.com/"}, {"id": "wr7", "category": "שיאי עולם", "difficulty": "בינוני", "question": "באיזו שנה שבר יוסיין בולט את שיא ה-100 מטר הנוכחי?", "answer": 2009, "unit": "שנה", "explanation": "9.58 שניות באליפות העולם בברלין באוגוסט 2009.", "source": "https://www.worldathletics.org/records/by-category/world-records"}, {"id": "wr8", "category": "שיאי עולם", "difficulty": "קשה", "question": "מה הטמפרטורה הנמוכה ביותר שנמדדה אי פעם בכדור הארץ (ערך מוחלט)?", "answer": 89, "unit": "מעלות מתחת לאפס", "explanation": "-89.2 מעלות צלזיוס בתחנת ווסטוק באנטרקטיקה ב-1983.", "source": "https://www.britannica.com/place/Antarctica"}, {"id": "wr9", "category": "שיאי עולם", "difficulty": "בינוני", "question": "מה אורך המרתון הקלאסי בק\"מ?", "answer": 42, "unit": "ק\"מ", "explanation": "מרתון רשמי באורך 42.195 ק\"מ.", "source": "https://www.worldathletics.org/"}, {"id": "wr10", "category": "שיאי עולם", "difficulty": "קל", "question": "באיזו שנה עלה האדם הראשון לחלל (יורי גגרין)?", "answer": 1961, "unit": "שנה", "explanation": "יורי גגרין הקיף את כדור הארץ ב-12 באפריל 1961.", "source": "https://www.britannica.com/biography/Yuri-Gagarin"}, {"id": "geo1", "category": "גאוגרפיה", "difficulty": "קל", "question": "מה אורך נהר הנילוס בק\"מ?", "answer": 6650, "unit": "ק\"מ", "explanation": "הנילוס נחשב לנהר הארוך בעולם.", "source": "https://www.britannica.com/place/Nile-River"}, {"id": "geo2", "category": "גאוגרפיה", "difficulty": "בינוני", "question": "כמה מדינות חברות באו\"ם?", "answer": 193, "unit": "מדינות", "explanation": "דרום סודן הייתה המדינה האחרונה שהתקבלה ב-2011.", "source": "https://www.un.org/en/about-us/member-states"}, {"id": "geo3", "category": "גאוגרפיה", "difficulty": "בינוני", "question": "כמה אזורי זמן יש ברוסיה?", "answer": 11, "unit": "אזורים", "explanation": "רוסיה משתרעת על פני 11 אזורי זמן.", "source": "https://www.britannica.com/place/Russia"}, {"id": "geo4", "category": "גאוגרפיה", "difficulty": "קל", "question": "כמה יבשות יש בעולם?", "answer": 7, "unit": "יבשות", "explanation": "החלוקה המקובלת היא 7 יבשות.", "source": "https://www.britannica.com/topic/continent-geography"}, {"id": "geo5", "category": "גאוגרפיה", "difficulty": "קל", "question": "כמה אוקיינוסים מוכרים בעולם?", "answer": 5, "unit": "אוקיינוסים", "explanation": "חמישה אוקיינוסים: השקט, אטלנטי, הודי, ארקטי ודרומי.", "source": "https://oceanservice.noaa.gov/facts/howmanyoceans.html"}, {"id": "geo6", "category": "גאוגרפיה", "difficulty": "בינוני", "question": "באיזו שנה הוקמה מדינת ישראל?", "answer": 1948, "unit": "שנה", "explanation": "ההכרזה הייתה ב-14 במאי 1948.", "source": "https://www.gov.il/he/departments/general/the-establishment-of-the-state-of-israel"}, {"id": "geo7", "category": "גאוגרפיה", "difficulty": "קשה", "question": "מה גובה ים המלח מתחת לפני הים במטרים (ערך מוחלט)?", "answer": 430, "unit": "מטרים", "explanation": "הנקודה היבשתית הנמוכה בעולם.", "source": "https://www.britannica.com/place/Dead-Sea"}, {"id": "geo8", "category": "גאוגרפיה", "difficulty": "קל", "question": "כמה מדינות חולקות גבול עם ישראל?", "answer": 4, "unit": "מדינות", "explanation": "מצרים, ירדן, סוריה ולבנון.", "source": "https://www.gov.il/he/departments/ministry_of_foreign_affairs"}, {"id": "geo9", "category": "גאוגרפיה", "difficulty": "בינוני", "question": "מה גובה מגדל אייפל במטרים כולל אנטנה?", "answer": 330, "unit": "מטרים", "explanation": "הגובה הרשמי כולל אנטנה.", "source": "https://www.toureiffel.paris/en/the-monument/key-figures"}, {"id": "geo10", "category": "גאוגרפיה", "difficulty": "קשה", "question": "כמה מדינות יש ביבשת אפריקה?", "answer": 54, "unit": "מדינות", "explanation": "54 מדינות עצמאיות.", "source": "https://au.int/en/member_states/countryprofiles2"}, {"id": "geo11", "category": "גאוגרפיה", "difficulty": "קל", "question": "מה האוכלוסיה של ישראל במיליונים (2024)?", "answer": 10, "unit": "מיליונים", "explanation": "כ-9.9 מיליון נפש.", "source": "https://www.cbs.gov.il/he/Pages/default.aspx"}, {"id": "geo12", "category": "גאוגרפיה", "difficulty": "בינוני", "question": "באיזו שנה התאחדה גרמניה מחדש?", "answer": 1990, "unit": "שנה", "explanation": "3 באוקטובר 1990.", "source": "https://www.britannica.com/event/German-reunification"}, {"id": "geo13", "category": "גאוגרפיה", "difficulty": "קל", "question": "מה האוכלוסיה של ארה\"ב במיליונים (2024)?", "answer": 335, "unit": "מיליונים", "explanation": "כ-335 מיליון נפש.", "source": "https://www.census.gov/popclock/"}, {"id": "geo14", "category": "גאוגרפיה", "difficulty": "בינוני", "question": "מה האוכלוסיה של סין במיליארדים (2024)?", "answer": 1, "unit": "מיליארדים", "explanation": "כ-1.41 מיליארד נפש - עיגול ל-1.", "source": "https://www.worldbank.org/en/country/china"}, {"id": "geo15", "category": "גאוגרפיה", "difficulty": "קשה", "question": "כמה אלפי קמ\"ר שטחה של אנטרקטיקה?", "answer": 14000, "unit": "אלפי קמ\"ר", "explanation": "כ-14,000,000 קמ\"ר.", "source": "https://www.britannica.com/place/Antarctica"}, {"id": "hum1", "category": "גוף האדם", "difficulty": "קל", "question": "כמה עצמות יש בגוף אדם בוגר?", "answer": 206, "unit": "עצמות", "explanation": "תינוקות נולדים עם כ-270 עצמות.", "source": "https://www.britannica.com/science/human-skeleton"}, {"id": "hum2", "category": "גוף האדם", "difficulty": "קל", "question": "כמה חדרים יש בלב האדם?", "answer": 4, "unit": "חדרים", "explanation": "שני פרוזדורים ושני חדרים.", "source": "https://www.britannica.com/science/heart"}, {"id": "hum3", "category": "גוף האדם", "difficulty": "בינוני", "question": "כמה שיניים יש למבוגר כולל שיני בינה?", "answer": 32, "unit": "שיניים", "explanation": "32 שיניים קבועות עם שיני בינה.", "source": "https://www.britannica.com/science/tooth-anatomy"}, {"id": "hum4", "category": "גוף האדם", "difficulty": "קשה", "question": "כמה שרירים בערך יש בגוף האדם?", "answer": 600, "unit": "שרירים", "explanation": "ההערכה המקובלת היא כ-600.", "source": "https://www.britannica.com/science/muscle"}, {"id": "hum5", "category": "גוף האדם", "difficulty": "בינוני", "question": "כמה פעימות לב לדקה בממוצע במנוחה?", "answer": 70, "unit": "פעימות", "explanation": "60-100 פעימות, ממוצע 70.", "source": "https://www.heart.org/en/healthy-living/fitness/fitness-basics/target-heart-rates"}, {"id": "hum6", "category": "גוף האדם", "difficulty": "קל", "question": "כמה אחוזי מים יש בגוף האדם?", "answer": 60, "unit": "אחוז", "explanation": "כ-60% ממסת הגוף.", "source": "https://www.usgs.gov/special-topics/water-science-school/science/water-you-water-and-human-body"}, {"id": "hum7", "category": "גוף האדם", "difficulty": "בינוני", "question": "כמה ליטר דם יש לאדם בוגר?", "answer": 5, "unit": "ליטרים", "explanation": "בערך 5 ליטרים.", "source": "https://www.britannica.com/science/blood-biochemistry"}, {"id": "hum8", "category": "גוף האדם", "difficulty": "קל", "question": "כמה שעות שינה מומלצות למבוגר ביממה?", "answer": 8, "unit": "שעות", "explanation": "המלצה ממוצעת 7-9 שעות.", "source": "https://www.cdc.gov/sleep/about_sleep/how_much_sleep.html"}, {"id": "hum9", "category": "גוף האדם", "difficulty": "בינוני", "question": "מה חום הגוף הנורמלי במעלות צלזיוס?", "answer": 37, "unit": "מעלות", "explanation": "טמפרטורה תקינה כ-37 מעלות.", "source": "https://www.britannica.com/science/body-temperature"}, {"id": "hum10", "category": "גוף האדם", "difficulty": "קשה", "question": "כמה חוליות יש בעמוד השדרה?", "answer": 33, "unit": "חוליות", "explanation": "7 צוואריות, 12 חזיות, 5 מותניות, 5 קודקודיות, 4 זנב.", "source": "https://www.britannica.com/science/vertebral-column"}, {"id": "hum11", "category": "גוף האדם", "difficulty": "קל", "question": "כמה זוגות עצבי שדרה יוצאים מחוט השדרה?", "answer": 31, "unit": "זוגות", "explanation": "31 זוגות בסך הכל.", "source": "https://www.britannica.com/science/spinal-nerve"}, {"id": "spt1", "category": "ספורט", "difficulty": "קל", "question": "כמה שחקנים מכל קבוצה במגרש בכדורגל?", "answer": 11, "unit": "שחקנים", "explanation": "11 שחקנים כולל שוער.", "source": "https://www.fifa.com/"}, {"id": "spt2", "category": "ספורט", "difficulty": "בינוני", "question": "כמה מדליות זהב אולימפיות זכה מייקל פלפס?", "answer": 23, "unit": "מדליות", "explanation": "האולימפיון המעוטר ביותר.", "source": "https://www.olympics.com/en/athletes/michael-phelps"}, {"id": "spt3", "category": "ספורט", "difficulty": "קל", "question": "כמה נקודות שווה טאצ'דאון בפוטבול אמריקאי?", "answer": 6, "unit": "נקודות", "explanation": "6 נקודות פלוס אפשרות לנקודות נוספות.", "source": "https://operations.nfl.com/the-rules/"}, {"id": "spt4", "category": "ספורט", "difficulty": "קשה", "question": "מה ניקוד מקסימלי בפריים סנוקר?", "answer": 147, "unit": "נקודות", "explanation": "ברייק של 147 עם כל הכדורים.", "source": "https://wpbsa.com/"}, {"id": "spt5", "category": "ספורט", "difficulty": "קל", "question": "כמה דקות במחצית כדורגל?", "answer": 45, "unit": "דקות", "explanation": "45 דקות + תוספת זמן.", "source": "https://www.fifa.com/"}, {"id": "spt6", "category": "ספורט", "difficulty": "בינוני", "question": "באיזו שנה התקיימו האולימפיאדה המודרנית הראשונה?", "answer": 1896, "unit": "שנה", "explanation": "האולימפיאדה הראשונה התקיימה באתונה ב-1896.", "source": "https://www.olympics.com/en/olympic-games/athens-1896"}, {"id": "spt7", "category": "ספורט", "difficulty": "קל", "question": "כמה שחקנים בכדורסל במגרש בו זמנית מקבוצה?", "answer": 5, "unit": "שחקנים", "explanation": "5 שחקנים מכל קבוצה.", "source": "https://www.nba.com/"}, {"id": "spt8", "category": "ספורט", "difficulty": "בינוני", "question": "כמה דקות יש ברבע NBA?", "answer": 12, "unit": "דקות", "explanation": "4 רבעים של 12 דקות.", "source": "https://official.nba.com/rule-no-5-scoring-and-timing/"}, {"id": "spt9", "category": "ספורט", "difficulty": "קל", "question": "כמה שערים נדרשים להאט-טריק?", "answer": 3, "unit": "שערים", "explanation": "3 שערים מאותו שחקן במשחק אחד.", "source": "https://www.fifa.com/"}, {"id": "spt10", "category": "ספורט", "difficulty": "קשה", "question": "באיזו שנה הוקמה הפרמייר ליג בפורמטה הנוכחי?", "answer": 1992, "unit": "שנה", "explanation": "20 בפברואר 1992.", "source": "https://www.premierleague.com/"}, {"id": "spt11", "category": "ספורט", "difficulty": "בינוני", "question": "באיזו שנה זכתה ישראל במדליית זהב אולימפית ראשונה?", "answer": 2004, "unit": "שנה", "explanation": "גל פרידמן זכה בשייט באתונה 2004.", "source": "https://www.olympics.com/en/athletes/gal-fridman"}, {"id": "spt12", "category": "ספורט", "difficulty": "קל", "question": "מה אורך מסלול אולימפי לשחייה במטרים?", "answer": 50, "unit": "מטרים", "explanation": "בריכה אולימפית 50 מטרים.", "source": "https://www.fina.org/"}, {"id": "med1", "category": "מדיה ובידור", "difficulty": "קל", "question": "באיזו שנה יצא מלחמת הכוכבים הראשון?", "answer": 1977, "unit": "שנה", "explanation": "הוקרן ב-25 במאי 1977.", "source": "https://www.britannica.com/topic/Star-Wars-film-series"}, {"id": "med2", "category": "מדיה ובידור", "difficulty": "בינוני", "question": "כמה עונות הופקו לסדרה 'חברים'?", "answer": 10, "unit": "עונות", "explanation": "שודרה מ-1994 עד 2004.", "source": "https://www.imdb.com/title/tt0108778/"}, {"id": "med3", "category": "מדיה ובידור", "difficulty": "קשה", "question": "מה היה תקציב ההפקה של 'אווטאר' (2009) במיליוני דולר?", "answer": 237, "unit": "מיליון דולר", "explanation": "כ-237 מיליון דולר.", "source": "https://www.imdb.com/title/tt0499549/"}, {"id": "med4", "category": "מדיה ובידור", "difficulty": "קל", "question": "כמה סרטי הארי פוטר ראשיים יש?", "answer": 8, "unit": "סרטים", "explanation": "8 סרטים מבוססים על 7 הספרים.", "source": "https://www.warnerbros.com/movies/harry-potter-films"}, {"id": "med5", "category": "מדיה ובידור", "difficulty": "בינוני", "question": "באיזו שנה נוסד נטפליקס?", "answer": 1997, "unit": "שנה", "explanation": "התחיל כשירות השכרת DVD בדואר.", "source": "https://about.netflix.com/en/news/our-history"}, {"id": "med6", "category": "מדיה ובידור", "difficulty": "קל", "question": "כמה ספרי הארי פוטר ראשיים יצאו?", "answer": 7, "unit": "ספרים", "explanation": "ג'.ק. רולינג כתבה 7 ספרים.", "source": "https://www.britannica.com/topic/Harry-Potter-fictional-character"}, {"id": "med7", "category": "מדיה ובידור", "difficulty": "בינוני", "question": "באיזו שנה הושק Spotify?", "answer": 2008, "unit": "שנה", "explanation": "הושק ב-7 באוקטובר 2008.", "source": "https://newsroom.spotify.com/company-info/"}, {"id": "med8", "category": "מדיה ובידור", "difficulty": "קל", "question": "באיזו שנה הוקרן הסרט 'טיטאניק'?", "answer": 1997, "unit": "שנה", "explanation": "ג'יימס קמרון, 1997.", "source": "https://www.britannica.com/topic/Titanic-1997-film"}, {"id": "med9", "category": "מדיה ובידור", "difficulty": "קשה", "question": "כמה פסלי אוסקר זכה 'טיטאניק' ב-1998?", "answer": 11, "unit": "פסלים", "explanation": "שיא משותף בהיסטוריה.", "source": "https://www.oscars.org/"}, {"id": "med10", "category": "מדיה ובידור", "difficulty": "בינוני", "question": "באיזו שנה ייסד יוטיוב?", "answer": 2005, "unit": "שנה", "explanation": "פברואר 2005.", "source": "https://www.youtube.com/about/"}, {"id": "med11", "category": "מדיה ובידור", "difficulty": "קשה", "question": "באיזה גיל נפטר אלביס פרסלי?", "answer": 42, "unit": "שנים", "explanation": "נפטר ב-16 באוגוסט 1977.", "source": "https://www.britannica.com/biography/Elvis-Presley"}, {"id": "med12", "category": "מדיה ובידור", "difficulty": "קל", "question": "באיזו שנה התפרקה להקת הביטלס?", "answer": 1970, "unit": "שנה", "explanation": "אפריל 1970.", "source": "https://www.britannica.com/topic/the-Beatles"}, {"id": "tch1", "category": "טכנולוגיה", "difficulty": "קל", "question": "באיזו שנה יצא האייפון הראשון?", "answer": 2007, "unit": "שנה", "explanation": "ינואר 2007, השקה ביוני.", "source": "https://www.apple.com/newsroom/2007/01/09Apple-Reinvents-the-Phone-with-iPhone/"}, {"id": "tch2", "category": "טכנולוגיה", "difficulty": "בינוני", "question": "באיזו שנה נוסדה גוגל?", "answer": 1998, "unit": "שנה", "explanation": "ספטמבר 1998.", "source": "https://about.google/our-story/"}, {"id": "tch3", "category": "טכנולוגיה", "difficulty": "בינוני", "question": "באיזו שנה הושק ויקיפדיה?", "answer": 2001, "unit": "שנה", "explanation": "15 בינואר 2001.", "source": "https://en.wikipedia.org/wiki/History_of_Wikipedia"}, {"id": "tch4", "category": "טכנולוגיה", "difficulty": "קשה", "question": "כמה טרנזיסטורים היו במעבד Intel 4004 (1971)?", "answer": 2300, "unit": "טרנזיסטורים", "explanation": "2,300 טרנזיסטורים.", "source": "https://www.intel.com/content/www/us/en/history/museum-story-of-intel-4004.html"}, {"id": "tch5", "category": "טכנולוגיה", "difficulty": "קל", "question": "באיזו שנה נוסדה פייסבוק?", "answer": 2004, "unit": "שנה", "explanation": "פברואר 2004.", "source": "https://about.fb.com/company-info/"}, {"id": "tch6", "category": "טכנולוגיה", "difficulty": "בינוני", "question": "באיזו שנה נוסדה אמזון?", "answer": 1994, "unit": "שנה", "explanation": "ג'ף בזוס, 1994.", "source": "https://www.aboutamazon.com/about-us"}, {"id": "tch7", "category": "טכנולוגיה", "difficulty": "קל", "question": "באיזו שנה נוסדה מיקרוסופט?", "answer": 1975, "unit": "שנה", "explanation": "ביל גייטס ופול אלן, 1975.", "source": "https://news.microsoft.com/facts-about-microsoft/"}, {"id": "tch8", "category": "טכנולוגיה", "difficulty": "בינוני", "question": "באיזו שנה השיקה אפל את ה-Macintosh הראשון?", "answer": 1984, "unit": "שנה", "explanation": "24 בינואר 1984.", "source": "https://www.apple.com/"}, {"id": "tch9", "category": "טכנולוגיה", "difficulty": "קשה", "question": "באיזו שנה הומצא הטלפון?", "answer": 1876, "unit": "שנה", "explanation": "אלכסנדר גרהאם בל קיבל פטנט ב-1876.", "source": "https://www.britannica.com/biography/Alexander-Graham-Bell"}, {"id": "tch10", "category": "טכנולוגיה", "difficulty": "בינוני", "question": "באיזו שנה הומצא הטרנזיסטור?", "answer": 1947, "unit": "שנה", "explanation": "Bell Labs, 23 בדצמבר 1947.", "source": "https://www.britannica.com/technology/transistor"}, {"id": "tch11", "category": "טכנולוגיה", "difficulty": "קל", "question": "באיזו שנה הומצא Linux?", "answer": 1991, "unit": "שנה", "explanation": "ספטמבר 1991, לינוס טורבאלדס.", "source": "https://www.kernel.org/"}, {"id": "tch12", "category": "טכנולוגיה", "difficulty": "קשה", "question": "כמה ביטים יש בבייט?", "answer": 8, "unit": "ביטים", "explanation": "בייט סטנדרטי הוא 8 ביטים.", "source": "https://www.britannica.com/technology/byte"}, {"id": "tch13", "category": "טכנולוגיה", "difficulty": "קל", "question": "באיזו שנה הושק Gmail?", "answer": 2004, "unit": "שנה", "explanation": "1 באפריל 2004.", "source": "https://www.google.com/intl/en/gmail/about/"}, {"id": "ecn1", "category": "כלכלה", "difficulty": "בינוני", "question": "באיזו שנה הושק היורו כמטבע פיזי?", "answer": 2002, "unit": "שנה", "explanation": "1 בינואר 2002.", "source": "https://www.ecb.europa.eu/euro/intro/html/index.en.html"}, {"id": "ecn2", "category": "כלכלה", "difficulty": "בינוני", "question": "כמה מדינות חברות באירוזון כיום?", "answer": 20, "unit": "מדינות", "explanation": "קרואטיה הצטרפה ב-2023.", "source": "https://economy-finance.ec.europa.eu/euro/what-euro_en"}, {"id": "ecn3", "category": "כלכלה", "difficulty": "קשה", "question": "באיזו שנה נחתם הסכם Buttonwood (קדם NYSE)?", "answer": 1792, "unit": "שנה", "explanation": "17 במאי 1792.", "source": "https://www.nyse.com/history-of-nyse"}, {"id": "ecn4", "category": "כלכלה", "difficulty": "קל", "question": "כמה אגורות בשקל?", "answer": 100, "unit": "אגורות", "explanation": "100 אגורות.", "source": "https://www.boi.org.il/"}, {"id": "ecn5", "category": "כלכלה", "difficulty": "בינוני", "question": "באיזו שנה הוקם בנק ישראל?", "answer": 1954, "unit": "שנה", "explanation": "1 בדצמבר 1954.", "source": "https://www.boi.org.il/"}, {"id": "ecn6", "category": "כלכלה", "difficulty": "קל", "question": "כמה סנטים בדולר?", "answer": 100, "unit": "סנטים", "explanation": "100 סנטים.", "source": "https://www.federalreserve.gov/"}, {"id": "ecn7", "category": "כלכלה", "difficulty": "בינוני", "question": "באיזו שנה התרחש המשבר הכלכלי הגדול (Wall Street Crash)?", "answer": 1929, "unit": "שנה", "explanation": "29 באוקטובר 1929.", "source": "https://www.britannica.com/event/stock-market-crash-of-1929"}, {"id": "ecn8", "category": "כלכלה", "difficulty": "בינוני", "question": "באיזו שנה התרחש המשבר הפיננסי העולמי האחרון?", "answer": 2008, "unit": "שנה", "explanation": "ספטמבר 2008, קריסת ליהמן.", "source": "https://www.britannica.com/event/financial-crisis-of-2007-2008"}, {"id": "ecn9", "category": "כלכלה", "difficulty": "קשה", "question": "באיזו שנה נוסד הבנק העולמי?", "answer": 1944, "unit": "שנה", "explanation": "1944, ועידת ברטון וודס.", "source": "https://www.worldbank.org/en/about/history"}, {"id": "nat1", "category": "טבע", "difficulty": "קל", "question": "מה המהירות המרבית של נמר ציד בקמ\"ש?", "answer": 110, "unit": "קמ\"ש", "explanation": "כ-110 קמ\"ש בהבזקים קצרים.", "source": "https://www.nationalgeographic.com/animals/mammals/facts/cheetah"}, {"id": "nat2", "category": "טבע", "difficulty": "קל", "question": "כמה רגליים יש לעכביש?", "answer": 8, "unit": "רגליים", "explanation": "עכבישים בעלי 8 רגליים.", "source": "https://www.britannica.com/animal/spider-arachnid"}, {"id": "nat3", "category": "טבע", "difficulty": "בינוני", "question": "מה אורך החיים הממוצע של צב ענק בשנים?", "answer": 150, "unit": "שנים", "explanation": "צבי ענק חיים מעל מאה שנה.", "source": "https://www.nationalgeographic.com/animals/reptiles/facts/galapagos-tortoise"}, {"id": "nat4", "category": "טבע", "difficulty": "קשה", "question": "מה משקלו המקסימלי של לוויתן כחול בטונות?", "answer": 180, "unit": "טונות", "explanation": "החיה הגדולה אי פעם.", "source": "https://www.nationalgeographic.com/animals/mammals/facts/blue-whale"}, {"id": "nat5", "category": "טבע", "difficulty": "קל", "question": "כמה רגליים יש לחרק?", "answer": 6, "unit": "רגליים", "explanation": "חרקים בעלי 6 רגליים.", "source": "https://www.britannica.com/animal/insect"}, {"id": "nat6", "category": "טבע", "difficulty": "בינוני", "question": "מה אורך החיים הממוצע של פיל בטבע בשנים?", "answer": 70, "unit": "שנים", "explanation": "60-70 שנים.", "source": "https://www.nationalgeographic.com/animals/mammals/facts/african-elephant"}, {"id": "nat7", "category": "טבע", "difficulty": "בינוני", "question": "כמה ימים לוקח להבשיל ביצת תרנגולת?", "answer": 21, "unit": "ימים", "explanation": "21 ימים של דגירה.", "source": "https://www.britannica.com/animal/chicken"}, {"id": "nat8", "category": "טבע", "difficulty": "קל", "question": "כמה צבעים בקשת בענן?", "answer": 7, "unit": "צבעים", "explanation": "אדום, כתום, צהוב, ירוק, כחול, אינדיגו, סגול.", "source": "https://www.britannica.com/science/rainbow"}, {"id": "nat9", "category": "טבע", "difficulty": "קשה", "question": "כמה ימים נמשך הריון פילה?", "answer": 660, "unit": "ימים", "explanation": "כ-22 חודשים.", "source": "https://www.nationalgeographic.com/animals/mammals/facts/african-elephant"}, {"id": "nat10", "category": "טבע", "difficulty": "קל", "question": "כמה ירחים יש למאדים?", "answer": 2, "unit": "ירחים", "explanation": "פובוס ודימוס.", "source": "https://science.nasa.gov/mars/moons/"}, {"id": "nat11", "category": "טבע", "difficulty": "בינוני", "question": "מה גובה העץ הגבוה בעולם (Hyperion) במטרים?", "answer": 116, "unit": "מטרים", "explanation": "עץ סקויה בקליפורניה.", "source": "https://www.nps.gov/redw/index.htm"}, {"id": "spc1", "category": "חלל ומדע", "difficulty": "קל", "question": "כמה כוכבי לכת במערכת השמש?", "answer": 8, "unit": "כוכבי לכת", "explanation": "פלוטו סווג מחדש ב-2006.", "source": "https://solarsystem.nasa.gov/planets/overview/"}, {"id": "spc2", "category": "חלל ומדע", "difficulty": "בינוני", "question": "כמה ירחים יש לצדק (מאומתים)?", "answer": 95, "unit": "ירחים", "explanation": "95 ירחים נכון לעדכוני IAU.", "source": "https://science.nasa.gov/jupiter/moons/"}, {"id": "spc3", "category": "חלל ומדע", "difficulty": "בינוני", "question": "באיזו שנה נחתו בני אדם על הירח?", "answer": 1969, "unit": "שנה", "explanation": "אפולו 11, 20 ביולי 1969.", "source": "https://www.nasa.gov/mission_pages/apollo/apollo11.html"}, {"id": "spc4", "category": "חלל ומדע", "difficulty": "קשה", "question": "מה המרחק הממוצע מהארץ לשמש במיליוני ק\"מ?", "answer": 150, "unit": "מיליון ק\"מ", "explanation": "כ-149.6 מיליון ק\"מ (1 AU).", "source": "https://science.nasa.gov/sun/"}, {"id": "spc5", "category": "חלל ומדע", "difficulty": "קל", "question": "כמה ירחים יש לכדור הארץ?", "answer": 1, "unit": "ירח", "explanation": "ירח אחד.", "source": "https://moon.nasa.gov/"}, {"id": "spc6", "category": "חלל ומדע", "difficulty": "בינוני", "question": "כמה דקות לוקח לאור להגיע מהשמש לכדור הארץ?", "answer": 8, "unit": "דקות", "explanation": "8 דקות ו-20 שניות.", "source": "https://science.nasa.gov/sun/"}, {"id": "spc7", "category": "חלל ומדע", "difficulty": "קשה", "question": "באיזו שנה שוגר טלסקופ האבל?", "answer": 1990, "unit": "שנה", "explanation": "אפריל 1990.", "source": "https://hubblesite.org/"}, {"id": "spc8", "category": "חלל ומדע", "difficulty": "קל", "question": "כמה ימים בשנה ארצית?", "answer": 365, "unit": "ימים", "explanation": "365.25 ימים.", "source": "https://science.nasa.gov/earth/"}, {"id": "spc9", "category": "חלל ומדע", "difficulty": "בינוני", "question": "באיזו שנה הוקמה נאסא?", "answer": 1958, "unit": "שנה", "explanation": "29 ביולי 1958.", "source": "https://www.nasa.gov/about/highlights/HP_Establish.html"}, {"id": "spc10", "category": "חלל ומדע", "difficulty": "קשה", "question": "באיזו שנה שוגר הלוויין הראשון (ספוטניק 1)?", "answer": 1957, "unit": "שנה", "explanation": "4 באוקטובר 1957.", "source": "https://www.nasa.gov/history/sputnik/"}, {"id": "spc11", "category": "חלל ומדע", "difficulty": "בינוני", "question": "באיזו שנה התגלה פלוטו?", "answer": 1930, "unit": "שנה", "explanation": "קלייד טומבו, פברואר 1930.", "source": "https://science.nasa.gov/dwarf-planets/pluto/"}, {"id": "spc12", "category": "חלל ומדע", "difficulty": "קשה", "question": "כמה מיליון מעלות צלזיוס יש בליבת השמש?", "answer": 15, "unit": "מיליון מעלות", "explanation": "כ-15 מיליון מעלות.", "source": "https://science.nasa.gov/sun/"}, {"id": "fd1", "category": "מזון", "difficulty": "קל", "question": "כמה קלוריות בביצה גדולה אחת?", "answer": 72, "unit": "קק\"ל", "explanation": "ביצה גדולה כ-72 קלוריות.", "source": "https://fdc.nal.usda.gov/"}, {"id": "fd2", "category": "מזון", "difficulty": "בינוני", "question": "כמה קלוריות ב-100 גרם אורז לבן מבושל?", "answer": 130, "unit": "קק\"ל", "explanation": "כ-130 קלוריות.", "source": "https://fdc.nal.usda.gov/"}, {"id": "fd3", "category": "מזון", "difficulty": "קשה", "question": "כמה אלפי זני תפוחים יש בעולם?", "answer": 7, "unit": "אלפים", "explanation": "מעל 7,000 זנים שונים.", "source": "https://www.britannica.com/plant/apple-fruit-and-tree"}, {"id": "fd4", "category": "מזון", "difficulty": "קל", "question": "כמה גרם בקילוגרם?", "answer": 1000, "unit": "גרם", "explanation": "1,000 גרם.", "source": "https://www.bipm.org/en/measurement-units/"}, {"id": "fd5", "category": "מזון", "difficulty": "בינוני", "question": "כמה גרם חלבון יש בביצה?", "answer": 6, "unit": "גרם", "explanation": "כ-6 גרם חלבון.", "source": "https://fdc.nal.usda.gov/"}, {"id": "fd6", "category": "מזון", "difficulty": "קל", "question": "מה הטמפרטורה של מים רותחים בצלזיוס בגובה פני הים?", "answer": 100, "unit": "מעלות", "explanation": "100 מעלות.", "source": "https://www.britannica.com/science/boiling-point"}, {"id": "fd7", "category": "מזון", "difficulty": "בינוני", "question": "כמה גרם מלח מומלצים למבוגר ביום?", "answer": 5, "unit": "גרם", "explanation": "WHO ממליץ פחות מ-5 גרם.", "source": "https://www.who.int/news-room/fact-sheets/detail/salt-reduction"}, {"id": "fd8", "category": "מזון", "difficulty": "קשה", "question": "כמה זרעים יש בערך ברימון?", "answer": 600, "unit": "זרעים", "explanation": "כ-600 זרעים.", "source": "https://www.britannica.com/plant/pomegranate"}, {"id": "fd9", "category": "מזון", "difficulty": "קל", "question": "כמה קלוריות יש בתפוח בינוני?", "answer": 95, "unit": "קק\"ל", "explanation": "כ-95 קלוריות.", "source": "https://fdc.nal.usda.gov/"}, {"id": "his1", "category": "היסטוריה", "difficulty": "קל", "question": "באיזו שנה התחילה מלחמת העולם הראשונה?", "answer": 1914, "unit": "שנה", "explanation": "28 ביולי 1914.", "source": "https://www.britannica.com/event/World-War-I"}, {"id": "his2", "category": "היסטוריה", "difficulty": "קל", "question": "באיזו שנה הסתיימה מלחמת העולם השנייה?", "answer": 1945, "unit": "שנה", "explanation": "2 בספטמבר 1945.", "source": "https://www.britannica.com/event/World-War-II"}, {"id": "his3", "category": "היסטוריה", "difficulty": "בינוני", "question": "באיזו שנה התרחשה המהפכה הצרפתית?", "answer": 1789, "unit": "שנה", "explanation": "14 ביולי 1789.", "source": "https://www.britannica.com/event/French-Revolution"}, {"id": "his4", "category": "היסטוריה", "difficulty": "קשה", "question": "באיזו שנה הגיע קולומבוס לאמריקה?", "answer": 1492, "unit": "שנה", "explanation": "12 באוקטובר 1492.", "source": "https://www.britannica.com/biography/Christopher-Columbus"}, {"id": "his5", "category": "היסטוריה", "difficulty": "בינוני", "question": "באיזו שנה התרחשה מלחמת ששת הימים?", "answer": 1967, "unit": "שנה", "explanation": "יוני 1967.", "source": "https://www.britannica.com/event/Six-Day-War"}, {"id": "his6", "category": "היסטוריה", "difficulty": "בינוני", "question": "באיזו שנה הופלה חומת ברלין?", "answer": 1989, "unit": "שנה", "explanation": "9 בנובמבר 1989.", "source": "https://www.britannica.com/topic/Berlin-Wall"}, {"id": "his7", "category": "היסטוריה", "difficulty": "קל", "question": "באיזו שנה נחתם הסכם השלום בין ישראל למצרים?", "answer": 1979, "unit": "שנה", "explanation": "26 במרץ 1979.", "source": "https://www.gov.il/he/departments/policies/peace_egypt_treaty"}, {"id": "his8", "category": "היסטוריה", "difficulty": "קשה", "question": "באיזו שנה נחתמה מגילת העצמאות האמריקאית?", "answer": 1776, "unit": "שנה", "explanation": "4 ביולי 1776.", "source": "https://www.britannica.com/topic/Declaration-of-Independence"}];
+
+const ALL_CATEGORIES = [
+  "שיאי עולם","גאוגרפיה","גוף האדם","ספורט","מדיה ובידור",
+  "טכנולוגיה","כלכלה","טבע","חלל ומדע","מזון","היסטוריה"
+];
+const ALL_DIFFICULTIES = ["קל","בינוני","קשה"];
+
+// === GAME RULES (enforced strictly) ===
+const TARGET_SCORE = 5;          // Must reach this score
+const WIN_MARGIN = 2;             // Must win by this margin (tennis-style)
+const FIXED_TIME = 20;            // seconds in fixed mode
+const PRESSURE_TIME = 7;          // seconds after first submit in pressure mode
+const MIN_SUBMIT_TIME = 2;        // seconds — anti-bluff in pressure mode
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  playerId: "p_" + Math.random().toString(36).slice(2,10),
+  playerName: "",
+  isHost: false,
+  roomCode: null,
+  peer: null,
+  conn: null,
+  // Match config
+  selectedMode: "fixed",
+  selectedDifficulties: new Set(["קל","בינוני","קשה"]),
+  selectedCategories: new Set(ALL_CATEGORIES),
+  // Game state
+  roundNum: 0,
+  myScore: 0, mySkipStars: 0,
+  oppScore: 0, oppSkipStars: 0,
+  oppName: "",
+  currentQuestion: null,
+  mySubmission: null,
+  oppSubmission: null,
+  pendingGuess: "",
+  hasSubmitted: false,
+  history: [],
+  usedQuestionIds: new Set(),
+  pressureTriggered: false,
+  roundStartTime: 0,
+  deadlineAt: 0,
+  localTimer: null,
+  resolveTimer: null,
+  countdownActive: false,
+  // Settings
+  customQuestions: [],
+  apiConfig: null,
+  soundEnabled: true,
+  vibrationEnabled: true,
+  llmValidation: true,
+  myStats: { matches: 0, wins: 0, bullseyes: 0, totalRounds: 0 }
+};
+
+// ============================================================
+// PERSISTED SETTINGS
+// ============================================================
+function loadSettings() {
+  try {
+    const c = localStorage.getItem("nd_custom_questions");
+    if (c) state.customQuestions = JSON.parse(c);
+    const a = localStorage.getItem("nd_api_config");
+    if (a) state.apiConfig = JSON.parse(a);
+    const n = localStorage.getItem("nd_name");
+    if (n) state.playerName = n;
+    const s = localStorage.getItem("nd_stats");
+    if (s) state.myStats = { ...state.myStats, ...JSON.parse(s) };
+    const sndOn = localStorage.getItem("nd_sound");
+    if (sndOn !== null) state.soundEnabled = sndOn === "1";
+    const vibOn = localStorage.getItem("nd_vib");
+    if (vibOn !== null) state.vibrationEnabled = vibOn === "1";
+    const valOn = localStorage.getItem("nd_validate");
+    if (valOn !== null) state.llmValidation = valOn === "1";
+  } catch(e) { console.warn(e); }
+}
+function saveSettings() {
+  try {
+    localStorage.setItem("nd_custom_questions", JSON.stringify(state.customQuestions));
+    if (state.apiConfig) localStorage.setItem("nd_api_config", JSON.stringify(state.apiConfig));
+    else localStorage.removeItem("nd_api_config");
+    if (state.playerName) localStorage.setItem("nd_name", state.playerName);
+    localStorage.setItem("nd_stats", JSON.stringify(state.myStats));
+    localStorage.setItem("nd_sound", state.soundEnabled ? "1" : "0");
+    localStorage.setItem("nd_vib", state.vibrationEnabled ? "1" : "0");
+    localStorage.setItem("nd_validate", state.llmValidation ? "1" : "0");
+  } catch(e) { console.warn(e); }
+}
+loadSettings();
+
+// ============================================================
+// AUDIO + HAPTICS (simple synth + vibration API)
+// ============================================================
+let audioCtx = null;
+function getCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  return audioCtx;
+}
+function beep(freq, duration, type = "sine", vol = 0.1) {
+  if (!state.soundEnabled) return;
+  const ctx = getCtx(); if (!ctx) return;
+  try {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    o.connect(g); g.connect(ctx.destination);
+    g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    o.start(); o.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+function vibrate(pattern) {
+  if (!state.vibrationEnabled || !navigator.vibrate) return;
+  try { navigator.vibrate(pattern); } catch(e) {}
+}
+function fxKeyPress() { beep(800, 0.04, "square", 0.04); vibrate(8); }
+function fxSubmit() { beep(660, 0.08); beep(880, 0.08); vibrate(30); }
+function fxWin() { beep(523, 0.1); setTimeout(() => beep(659, 0.1), 80); setTimeout(() => beep(784, 0.2), 160); vibrate([0, 50, 50, 50]); }
+function fxLose() { beep(330, 0.15, "triangle"); setTimeout(() => beep(220, 0.25, "triangle"), 120); vibrate(80); }
+function fxBullseye() { beep(880, 0.08); setTimeout(() => beep(1100, 0.08), 60); setTimeout(() => beep(1320, 0.15), 120); vibrate([0, 40, 30, 40, 30, 80]); }
+function fxOppAnswered() { beep(440, 0.06); vibrate([0, 60, 30, 60]); }
+function fxCountdown() { beep(660, 0.1, "sine", 0.08); vibrate(20); }
+function fxStart() { beep(880, 0.2, "sine", 0.1); vibrate(50); }
+
+// ============================================================
+// SCREEN ROUTING (with smooth transitions)
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => {
+    s.classList.remove("active");
+    s.classList.remove("entering");
+  });
+  const el = document.getElementById("screen-" + id);
+  el.classList.add("active");
+  el.classList.add("entering");
+  setTimeout(() => el.classList.remove("entering"), 400);
+}
+
+// ============================================================
+// API STATUS DISPLAY
+// ============================================================
+function updateApiStatus() {
+  const el = document.getElementById("create-api-status");
+  const label = document.getElementById("create-api-label");
+  const total = EMBEDDED_QUESTIONS.length + state.customQuestions.length;
+  if (state.apiConfig && state.apiConfig.key) {
+    el.classList.add("active");
+    label.textContent = `${state.apiConfig.provider} מחובר · שאלות חיות${state.llmValidation ? " (עם אימות)" : ""}`;
+  } else {
+    el.classList.remove("active");
+    label.textContent = `שאלות ממסד מובנה (${total} שאלות)`;
+  }
+}
+
+// ============================================================
+// CATEGORY GRID
+// ============================================================
+function renderCategoryGrid() {
+  const grid = document.getElementById("cat-grid");
+  grid.innerHTML = "";
+  // "All" toggle
+  const allChip = document.createElement("div");
+  allChip.className = "cat-chip all-toggle" + (state.selectedCategories.size === ALL_CATEGORIES.length ? " selected" : "");
+  allChip.textContent = "כל הקטגוריות (אקראי)";
+  allChip.onclick = () => {
+    if (state.selectedCategories.size === ALL_CATEGORIES.length) {
+      state.selectedCategories.clear();
+    } else {
+      state.selectedCategories = new Set(ALL_CATEGORIES);
+    }
+    renderCategoryGrid();
+  };
+  grid.appendChild(allChip);
+
+  // Individual chips
+  ALL_CATEGORIES.forEach(cat => {
+    const chip = document.createElement("div");
+    chip.className = "cat-chip" + (state.selectedCategories.has(cat) ? " selected" : "");
+    chip.textContent = cat;
+    chip.onclick = () => {
+      if (state.selectedCategories.has(cat)) state.selectedCategories.delete(cat);
+      else state.selectedCategories.add(cat);
+      renderCategoryGrid();
+    };
+    grid.appendChild(chip);
+  });
+}
+
+function renderDifficultyRow() {
+  document.querySelectorAll(".diff-chip").forEach(chip => {
+    const d = chip.dataset.diff;
+    chip.classList.toggle("selected", state.selectedDifficulties.has(d));
+    chip.onclick = () => {
+      if (state.selectedDifficulties.has(d)) {
+        if (state.selectedDifficulties.size > 1) state.selectedDifficulties.delete(d);
+      } else {
+        state.selectedDifficulties.add(d);
+      }
+      renderDifficultyRow();
+    };
+  });
+}
+
+// ============================================================
+// HOME ACTIONS
+// ============================================================
+document.getElementById("btn-create").addEventListener("click", () => {
+  if (state.playerName) document.getElementById("create-name").value = state.playerName;
+  renderCategoryGrid();
+  renderDifficultyRow();
+  updateApiStatus();
+  showScreen("create");
+});
+document.getElementById("btn-join").addEventListener("click", () => {
+  if (state.playerName) document.getElementById("join-name").value = state.playerName;
+  showScreen("join");
+  const urlCode = new URL(location.href).searchParams.get("room");
+  if (urlCode) document.getElementById("join-code").value = urlCode;
+});
+document.getElementById("btn-settings").addEventListener("click", openSettings);
+document.getElementById("btn-stats").addEventListener("click", showMyStats);
+document.querySelectorAll("[data-back]").forEach(b => {
+  b.addEventListener("click", () => showScreen(b.dataset.back));
+});
+document.querySelectorAll("#mode-toggle .mode-option").forEach(opt => {
+  opt.addEventListener("click", () => {
+    document.querySelectorAll("#mode-toggle .mode-option").forEach(o => o.classList.remove("active"));
+    opt.classList.add("active");
+    state.selectedMode = opt.dataset.mode;
+  });
+});
+
+// ============================================================
+// CREATE ROOM (HOST)
+// ============================================================
+document.getElementById("btn-do-create").addEventListener("click", async () => {
+  const name = document.getElementById("create-name").value.trim();
+  if (!name) return showToast("הכנס שם תחילה");
+  if (state.selectedCategories.size === 0) return showToast("בחר לפחות קטגוריה אחת");
+  if (state.selectedDifficulties.size === 0) return showToast("בחר לפחות רמת קושי אחת");
+  state.playerName = name;
+  saveSettings();
+  state.isHost = true;
+  await initPeer(true);
+});
+
+async function initPeer(isCreating) {
+  const status = document.getElementById("conn-status");
+  status.textContent = "מתחבר...";
+  status.classList.remove("connected","error");
+  let peerId;
+  if (isCreating) peerId = "duel-" + Math.random().toString(36).slice(2, 7);
+
+  try {
+    const peer = new Peer(peerId, { debug: 0 });
+    state.peer = peer;
+    return new Promise((resolve, reject) => {
+      peer.on("open", id => {
+        status.textContent = "מחובר";
+        status.classList.add("connected");
+        if (isCreating) {
+          state.roomCode = id;
+          peer.on("connection", c => {
+            state.conn = c;
+            setupConnHandlers(c);
+          });
+          showScreen("lobby");
+          renderLobby();
+        }
+        resolve(id);
+      });
+      peer.on("error", err => {
+        status.textContent = "שגיאה"; status.classList.add("error");
+        console.error("Peer error", err);
+        if (err.type === "unavailable-id") showToast("הקוד תפוס. נסה שוב.");
+        else if (err.type === "peer-unavailable") showToast("חדר לא נמצא. בדוק את הקוד.");
+        else if (err.type === "network" || err.type === "server-error") showToast("בעיית רשת.");
+        reject(err);
+      });
+      peer.on("disconnected", () => {
+        status.textContent = "מנותק - מנסה שוב";
+        status.classList.remove("connected");
+        peer.reconnect();
+      });
+    });
+  } catch(e) {
+    status.textContent = "שגיאה"; status.classList.add("error");
+    showToast("שגיאת התחברות");
+    throw e;
+  }
+}
+
+// ============================================================
+// JOIN ROOM
+// ============================================================
+document.getElementById("btn-do-join").addEventListener("click", async () => {
+  const name = document.getElementById("join-name").value.trim();
+  const code = document.getElementById("join-code").value.trim();
+  if (!name) return showToast("הכנס שם תחילה");
+  if (!code) return showToast("הכנס קוד חדר");
+  state.playerName = name;
+  saveSettings();
+  state.isHost = false;
+  state.roomCode = code;
+  try {
+    await initPeer(false);
+    const conn = state.peer.connect(code, { reliable: true });
+    state.conn = conn;
+    setupConnHandlers(conn);
+    conn.on("open", () => {
+      send({ type: "hello", name: state.playerName, playerId: state.playerId });
+      showScreen("lobby");
+      renderLobby();
+    });
+  } catch(e) { console.error(e); }
+});
+
+// ============================================================
+// CONNECTION HANDLERS
+// ============================================================
+function setupConnHandlers(conn) {
+  conn.on("open", () => {
+    if (state.isHost) {
+      send({ type: "hello", name: state.playerName, playerId: state.playerId });
+      // Share config with client
+      send({
+        type: "config",
+        mode: state.selectedMode,
+        categories: [...state.selectedCategories],
+        difficulties: [...state.selectedDifficulties]
+      });
+      renderLobby();
+    }
+  });
+  conn.on("data", handleMessage);
+  conn.on("close", () => {
+    showToast("היריב התנתק");
+    if (document.getElementById("screen-game").classList.contains("active") ||
+        document.getElementById("screen-reveal").classList.contains("active")) {
+      setTimeout(() => leaveRoom(), 2000);
+    }
+  });
+  conn.on("error", err => { console.error("Conn error", err); showToast("שגיאה בחיבור"); });
+}
+function send(msg) { if (state.conn && state.conn.open) state.conn.send(msg); }
+
+function handleMessage(msg) {
+  if (msg.type === "hello") {
+    state.oppName = msg.name;
+    renderLobby();
+  } else if (msg.type === "config") {
+    state.selectedMode = msg.mode;
+    state.selectedCategories = new Set(msg.categories);
+    state.selectedDifficulties = new Set(msg.difficulties);
+    renderLobby();
+  } else if (msg.type === "countdown") {
+    runCountdown();
+  } else if (msg.type === "start") {
+    state.currentQuestion = msg.question;
+    state.roundNum = msg.round;
+    state.deadlineAt = msg.deadlineAt;
+    state.roundStartTime = Date.now();
+    state.pressureTriggered = false;
+    state.mySubmission = null;
+    state.oppSubmission = null;
+    state.pendingGuess = "";
+    state.hasSubmitted = false;
+    document.getElementById("opp-banner").classList.remove("show");
+    showScreen("game");
+    renderGame();
+    startTimer();
+    fxStart();
+  } else if (msg.type === "submit") {
+    state.oppSubmission = { received: true, guess: msg.guess, skipped: msg.skipped };
+    fxOppAnswered();
+    // Pressure mode: trigger countdown
+    if (state.selectedMode === "pressure" && !state.mySubmission && !state.pressureTriggered) {
+      state.pressureTriggered = true;
+      state.deadlineAt = Date.now() + PRESSURE_TIME * 1000;
+      const banner = document.getElementById("opp-banner");
+      banner.classList.add("show");
+      document.getElementById("opp-banner-text").textContent = `היריב ענה! נותרו ${PRESSURE_TIME} שניות`;
+      document.getElementById("timer-zone").classList.add("pressure");
+      startTimer();
+    } else if (!state.mySubmission) {
+      // Fixed mode: just show banner
+      const banner = document.getElementById("opp-banner");
+      banner.classList.add("show");
+      document.getElementById("opp-banner-text").textContent = "היריב סיים - אתה עדיין יכול לענות";
+    }
+    renderGame();
+    if (state.isHost) maybeResolveRound();
+  } else if (msg.type === "resolve") {
+    applyResolution(msg.result);
+  } else if (msg.type === "next_countdown") {
+    runCountdown();
+  } else if (msg.type === "next") {
+    state.currentQuestion = msg.question;
+    state.roundNum = msg.round;
+    state.deadlineAt = msg.deadlineAt;
+    state.roundStartTime = Date.now();
+    state.pressureTriggered = false;
+    state.mySubmission = null;
+    state.oppSubmission = null;
+    state.pendingGuess = "";
+    state.hasSubmitted = false;
+    document.getElementById("opp-banner").classList.remove("show");
+    document.getElementById("timer-zone").classList.remove("pressure","danger","urgent");
+    showScreen("game");
+    renderGame();
+    startTimer();
+    fxStart();
+  } else if (msg.type === "end") {
+    applyResolution(msg.result);
+    setTimeout(() => showEndScreen(msg.finalState), 200);
+  } else if (msg.type === "rematch_request") {
+    if (state.isHost) {
+      send({ type: "rematch_accept" });
+      resetMatchState();
+      renderLobby();
+      showScreen("lobby");
+    }
+  } else if (msg.type === "rematch_accept") {
+    resetMatchState();
+    renderLobby();
+    showScreen("lobby");
+  } else if (msg.type === "leave") {
+    showToast("היריב יצא");
+    setTimeout(leaveRoom, 1500);
+  }
+}
+
+function resetMatchState() {
+  state.history = []; state.usedQuestionIds = new Set();
+  state.myScore = 0; state.mySkipStars = 0;
+  state.oppScore = 0; state.oppSkipStars = 0;
+  state.roundNum = 0;
+}
+
+// ============================================================
+// LOBBY RENDER
+// ============================================================
+function renderLobby() {
+  document.getElementById("lobby-code").textContent = state.roomCode || "----";
+  document.getElementById("lobby-pill").textContent =
+    state.selectedMode === "fixed" ? "מצב קבוע 20ש" : "מצב לחץ 7ש";
+
+  // Config info
+  const catCount = state.selectedCategories.size;
+  const catText = catCount === ALL_CATEGORIES.length ? "כל הקטגוריות" : `${catCount} קטגוריות`;
+  const diffText = [...state.selectedDifficulties].join(" · ");
+  document.getElementById("lobby-config-info").textContent =
+    `${catText} · ${diffText} · ראשון ל-${TARGET_SCORE} בהפרש ${WIN_MARGIN}`;
+
+  const c = document.getElementById("lobby-players");
+  c.innerHTML = "";
+  c.appendChild(playerCard({ name: state.playerName, you: true }));
+  if (state.oppName) c.appendChild(playerCard({ name: state.oppName, you: false }));
+  else c.appendChild(emptyCard());
+
+  const ready = !!state.oppName;
+  document.getElementById("lobby-waiting").style.display = ready ? "none" : "block";
+  const startBtn = document.getElementById("btn-start");
+  if (state.isHost) {
+    startBtn.style.display = "";
+    startBtn.disabled = !ready;
+    startBtn.textContent = ready ? "התחל דו-קרב" : "ממתין ליריב...";
+  } else {
+    startBtn.style.display = "none";
+  }
+}
+function playerCard(p) {
+  const div = document.createElement("div");
+  div.className = "player-card" + (p.you ? " you" : "");
+  div.innerHTML = `<div class="player-avatar">${(p.name||"?").charAt(0).toUpperCase()}</div><div class="player-name">${escapeHtml(p.name)}${p.you ? " (אתה)" : ""}</div><div class="player-status ready">מוכן</div>`;
+  return div;
+}
+function emptyCard() {
+  const div = document.createElement("div");
+  div.className = "player-card empty";
+  div.innerHTML = `<div class="player-avatar">?</div><div class="player-name">ממתין...</div><div class="player-status waiting">מקום פנוי</div>`;
+  return div;
+}
+
+document.getElementById("btn-copy-code").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText(state.roomCode); showToast("הקוד הועתק: " + state.roomCode); }
+  catch { showToast("קוד: " + state.roomCode); }
+});
+document.getElementById("btn-share").addEventListener("click", async () => {
+  const url = new URL(location.href);
+  url.searchParams.set("room", state.roomCode);
+  const link = url.toString();
+  try {
+    if (navigator.share) await navigator.share({ title: "דו-קרב מספרים", text: `הצטרף לדו-קרב - קוד: ${state.roomCode}`, url: link });
+    else { await navigator.clipboard.writeText(link); showToast("הקישור הועתק"); }
+  } catch {}
+});
+document.getElementById("btn-leave-lobby").addEventListener("click", () => { send({ type: "leave" }); leaveRoom(); });
+document.getElementById("btn-start").addEventListener("click", async () => {
+  if (!state.isHost) return;
+  // Trigger countdown for both
+  send({ type: "countdown" });
+  runCountdown(() => startNewMatch());
+});
+
+// ============================================================
+// COUNTDOWN 3-2-1
+// ============================================================
+function runCountdown(onComplete) {
+  if (state.countdownActive) return;
+  state.countdownActive = true;
+  const overlay = document.getElementById("countdown-overlay");
+  const numEl = document.getElementById("countdown-num");
+  overlay.classList.add("show");
+  let n = 3;
+  function tick() {
+    numEl.textContent = n;
+    numEl.style.animation = "none";
+    numEl.offsetHeight; // force reflow
+    numEl.style.animation = "countPop 1s ease forwards";
+    fxCountdown();
+    n--;
+    if (n >= 1) {
+      setTimeout(tick, 900);
+    } else {
+      setTimeout(() => {
+        overlay.classList.remove("show");
+        state.countdownActive = false;
+        if (onComplete) onComplete();
+      }, 900);
+    }
+  }
+  tick();
+}
+
+// ============================================================
+// QUESTION SELECTION / LLM GENERATION + VALIDATION
+// ============================================================
+async function pickNextQuestion() {
+  // Determine current difficulty (gradual)
+  const targetDiff = getProgressiveDifficulty();
+
+  if (state.apiConfig && state.apiConfig.key) {
+    try {
+      const q = await generateQuestionFromLLM(targetDiff);
+      if (q) {
+        state.usedQuestionIds.add(q.id);
+        return q;
+      }
+    } catch(e) {
+      console.warn("LLM generation failed, falling back to bank:", e);
+      showToast("שגיאת API - חוזר למסד מובנה");
+    }
+  }
+  // Fallback: pick from bank with filters
+  const pool = [...EMBEDDED_QUESTIONS, ...state.customQuestions].filter(q => {
+    if (state.usedQuestionIds.has(q.id)) return false;
+    if (state.selectedCategories.size > 0 && !state.selectedCategories.has(q.category)) return false;
+    if (state.selectedDifficulties.size > 0 && !state.selectedDifficulties.has(q.difficulty)) return false;
+    return true;
+  });
+  // Prefer target difficulty if available
+  let candidates = pool.filter(q => q.difficulty === targetDiff);
+  if (candidates.length === 0) candidates = pool;
+  if (candidates.length === 0) {
+    // Exhausted - reset and try again
+    state.usedQuestionIds = new Set();
+    const allPool = [...EMBEDDED_QUESTIONS, ...state.customQuestions].filter(q =>
+      (state.selectedCategories.size === 0 || state.selectedCategories.has(q.category)) &&
+      (state.selectedDifficulties.size === 0 || state.selectedDifficulties.has(q.difficulty))
+    );
+    if (allPool.length === 0) return EMBEDDED_QUESTIONS[Math.floor(Math.random() * EMBEDDED_QUESTIONS.length)];
+    candidates = allPool;
+  }
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  state.usedQuestionIds.add(pick.id);
+  return pick;
+}
+
+// Progressive difficulty: easy → medium → hard as rounds progress
+function getProgressiveDifficulty() {
+  const selected = [...state.selectedDifficulties];
+  if (selected.length === 1) return selected[0];
+  const round = state.roundNum;
+  if (round <= 2 && selected.includes("קל")) return "קל";
+  if (round <= 5 && selected.includes("בינוני")) return "בינוני";
+  if (selected.includes("קשה")) return "קשה";
+  // Fallback
+  return selected[Math.floor(Math.random() * selected.length)];
+}
+
+async function generateQuestionFromLLM(targetDifficulty) {
+  const cfg = state.apiConfig;
+  const usedQuestions = state.history.map(h => h.question).slice(-30);
+  const cats = [...state.selectedCategories];
+  const category = cats[Math.floor(Math.random() * cats.length)];
+  const difficulty = targetDifficulty;
+
+  const systemPrompt = `אתה מחולל שאלות חידון בעברית.
+החזר רק JSON תקין בפורמט (ללא טקסט נוסף, ללא code fences):
+{
+  "question": "השאלה בעברית",
+  "answer": <מספר שלם>,
+  "unit": "יחידת המידה",
+  "explanation": "הסבר קצר בעברית מדוע התשובה נכונה",
+  "source": "URL של מקור מהימן"
+}
+
+כללים נוקשים:
+- התשובה חייבת להיות מספר שלם (לא שבר). אם הערך המקורי שבר, עגל ונסח את השאלה בהתאם
+- המקור חייב להיות URL אמיתי של ויקיפדיה, אנציקלופדיה, או אתר רשמי
+- אם אין לך מקור אמין - אל תיצור את השאלה הזו
+- השאלה חייבת להיות מנוסחת באופן שיש לה תשובה מספרית חד-משמעית, מאומתת
+- אסור להמציא עובדות - אם אינך בטוח, החזר {"error":"לא בטוח"}`;
+
+  const userPrompt = `צור שאלת חידון חדשה.
+קטגוריה: ${category}
+רמת קושי: ${difficulty}
+
+שאלות שכבר שאלתי במשחק הזה (אסור לחזור):
+${usedQuestions.join("\n") || "(אין עדיין)"}`;
+
+  let content = await callLLM(cfg, systemPrompt, userPrompt, 600);
+  content = content.replace(/```json|```/g, "").trim();
+  const parsed = JSON.parse(content);
+
+  if (parsed.error) throw new Error("LLM refused: " + parsed.error);
+  if (typeof parsed.answer !== "number" || !Number.isInteger(parsed.answer)) {
+    throw new Error("Invalid answer (not integer)");
+  }
+  if (!parsed.question || !parsed.explanation) throw new Error("Missing fields");
+
+  // === LLM VALIDATION step (second pass) ===
+  if (state.llmValidation) {
+    try {
+      const validationPrompt = `בדוק את השאלה והתשובה הבאות:
+שאלה: ${parsed.question}
+תשובה מוצעת: ${parsed.answer} ${parsed.unit || ""}
+הסבר: ${parsed.explanation}
+מקור: ${parsed.source || "(לא סופק)"}
+
+החזר רק JSON בפורמט:
+{
+  "valid": true/false,
+  "correct_answer": <המספר השלם הנכון אם השאלה תקינה, או null>,
+  "reason": "הסבר קצר אם לא תקין"
+}
+
+תכריז על תקין רק אם:
+1. השאלה ברורה וחד-משמעית
+2. התשובה היא מספר שלם נכון לפי הידע שלך
+3. אם יש פער של עד 10% - תוקן הערך החדש בשדה correct_answer`;
+
+      const validation = await callLLM(cfg, "אתה בודק עובדות מומחה. השב רק ב-JSON.", validationPrompt, 300);
+      const cleanVal = validation.replace(/```json|```/g, "").trim();
+      const v = JSON.parse(cleanVal);
+
+      if (!v.valid) {
+        console.warn("LLM validator rejected:", v.reason);
+        throw new Error("validation_failed");
+      }
+      // Use validated answer if differs slightly
+      if (typeof v.correct_answer === "number" && Number.isInteger(v.correct_answer)) {
+        parsed.answer = v.correct_answer;
+      }
+    } catch(ve) {
+      if (ve.message === "validation_failed") throw ve;
+      console.warn("Validation step failed (continuing with original):", ve);
+    }
+  }
+
+  return {
+    id: "llm_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+    category, difficulty,
+    question: parsed.question,
+    answer: parsed.answer,
+    unit: parsed.unit || "",
+    explanation: parsed.explanation,
+    source: parsed.source || ""
+  };
+}
+
+async function callLLM(cfg, systemPrompt, userPrompt, maxTokens) {
+  if (cfg.provider === "openai") {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + cfg.key },
+      body: JSON.stringify({
+        model: cfg.model || "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.8
+      })
+    });
+    if (!res.ok) throw new Error("OpenAI error: " + res.status);
+    const data = await res.json();
+    return data.choices[0].message.content;
+  } else if (cfg.provider === "anthropic") {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": cfg.key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: cfg.model || "claude-haiku-4-5",
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: "user", content: userPrompt }]
+      })
+    });
+    if (!res.ok) { const txt = await res.text(); throw new Error("Anthropic: " + res.status + " " + txt); }
+    const data = await res.json();
+    return data.content[0].text;
+  } else if (cfg.provider === "gemini") {
+    const model = cfg.model || "gemini-1.5-flash";
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cfg.key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.8 }
+      })
+    });
+    if (!res.ok) throw new Error("Gemini: " + res.status);
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+  }
+  throw new Error("Unknown provider: " + cfg.provider);
+}
+
+// ============================================================
+// MATCH FLOW
+// ============================================================
+async function startNewMatch() {
+  resetMatchState();
+  state.roundNum = 1;
+  await startNextRound(true);
+}
+
+async function startNextRound(isFirst) {
+  if (!document.getElementById("screen-game").classList.contains("active")) {
+    showScreen("game");
+  }
+  document.getElementById("q-text").innerHTML = '<span class="q-loading-text"><span class="connect-spinner"></span> טוען שאלה...</span>';
+  document.getElementById("q-category").textContent = "טוען";
+  document.getElementById("q-difficulty").textContent = "...";
+  document.getElementById("opp-banner").classList.remove("show");
+  document.getElementById("timer-zone").classList.remove("pressure","danger","urgent");
+
+  const q = await pickNextQuestion();
+  state.currentQuestion = q;
+  state.deadlineAt = Date.now() + FIXED_TIME * 1000;
+  state.roundStartTime = Date.now();
+  state.pressureTriggered = false;
+  state.mySubmission = null;
+  state.oppSubmission = null;
+  state.pendingGuess = "";
+  state.hasSubmitted = false;
+
+  send({ type: "start", question: q, round: state.roundNum, deadlineAt: state.deadlineAt });
+  renderGame();
+  startTimer();
+  fxStart();
+}
+
+// ============================================================
+// GAME RENDER
+// ============================================================
+function renderGame() {
+  const q = state.currentQuestion;
+  if (!q) return;
+
+  // HUD
+  document.getElementById("hud-me-name").textContent = state.playerName + " (אתה)";
+  document.getElementById("hud-me-score").textContent = state.myScore;
+  document.getElementById("hud-me-stars").textContent = state.mySkipStars ? "★".repeat(state.mySkipStars) : "";
+  document.getElementById("hud-opp-name").textContent = state.oppName || "—";
+  document.getElementById("hud-opp-score").textContent = state.oppScore;
+  document.getElementById("hud-opp-stars").textContent = state.oppSkipStars ? "★".repeat(state.oppSkipStars) : "";
+
+  document.getElementById("game-round-pill").textContent = "סבב " + state.roundNum;
+
+  // Question content
+  document.getElementById("q-category").textContent = q.category;
+  const dEl = document.getElementById("q-difficulty");
+  dEl.textContent = q.difficulty;
+  dEl.className = "chip diff-" + q.difficulty;
+  const qTextEl = document.getElementById("q-text");
+  qTextEl.textContent = q.question;
+  // Dynamic font size based on length
+  const len = q.question.length;
+  qTextEl.className = "question-text " + (len < 50 ? "short" : len < 90 ? "medium" : "long");
+  document.getElementById("q-unit").textContent = "ביחידות: " + (q.unit || "");
+
+  // Guess display
+  const guessSection = document.getElementById("guess-section");
+  const guessEl = document.getElementById("guess-value");
+  const guessUnitEl = document.getElementById("guess-unit");
+  guessSection.classList.remove("has-value","locked");
+  if (state.mySubmission) {
+    if (state.mySubmission.skipped) {
+      guessEl.textContent = "דילגת";
+      guessEl.classList.add("placeholder");
+      guessUnitEl.textContent = "";
+    } else {
+      guessEl.textContent = Number(state.mySubmission.guess).toLocaleString('he-IL');
+      guessEl.classList.remove("placeholder");
+      guessUnitEl.textContent = q.unit;
+    }
+    guessSection.classList.add("locked");
+  } else if (state.pendingGuess) {
+    guessEl.textContent = Number(state.pendingGuess).toLocaleString('he-IL');
+    guessEl.classList.remove("placeholder");
+    guessUnitEl.textContent = q.unit;
+    guessSection.classList.add("has-value");
+  } else {
+    guessEl.textContent = "—";
+    guessEl.classList.add("placeholder");
+    guessUnitEl.textContent = "";
+  }
+
+  // Mini opponent status
+  const oppStat = document.getElementById("opp-mini-status");
+  if (state.oppSubmission) {
+    oppStat.classList.add("ready");
+    document.getElementById("opp-mini-text").textContent = (state.oppName||"היריב") + " סיים";
+  } else {
+    oppStat.classList.remove("ready");
+    document.getElementById("opp-mini-text").textContent = (state.oppName||"היריב") + " חושב...";
+  }
+
+  // Buttons
+  const submitBtn = document.getElementById("key-submit");
+  const skipBtn = document.getElementById("btn-skip");
+  if (state.hasSubmitted) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = "ממתין...";
+    skipBtn.disabled = true;
+  } else {
+    submitBtn.disabled = state.pendingGuess.length === 0;
+    submitBtn.textContent = "שלח";
+    skipBtn.disabled = state.mySkipStars < 3;
+  }
+}
+
+// ============================================================
+// TIMER
+// ============================================================
+function startTimer() {
+  if (state.localTimer) cancelAnimationFrame(state.localTimer);
+  const bar = document.getElementById("timer-bar");
+  const num = document.getElementById("timer-num");
+  const zone = document.getElementById("timer-zone");
+  const total = state.pressureTriggered ? PRESSURE_TIME : FIXED_TIME;
+  function tick() {
+    const remainMs = Math.max(0, state.deadlineAt - Date.now());
+    const remainS = remainMs / 1000;
+    const pct = Math.max(0, Math.min(100, (remainS / total) * 100));
+    bar.style.width = pct + "%";
+
+    // Color states
+    const isUrgent = remainS < total * 0.4 && remainS >= total * 0.2;
+    const isDanger = remainS < total * 0.2;
+    bar.classList.toggle("warn", isUrgent);
+    bar.classList.toggle("danger", isDanger);
+    bar.classList.toggle("pressure", state.pressureTriggered);
+
+    if (!state.pressureTriggered) {
+      zone.classList.toggle("urgent", isUrgent);
+      zone.classList.toggle("danger", isDanger);
+    }
+
+    num.textContent = Math.ceil(remainS);
+    if (remainMs > 0) {
+      state.localTimer = requestAnimationFrame(tick);
+    } else {
+      if (!state.hasSubmitted) autoSubmitTimeout();
+    }
+  }
+  tick();
+}
+function autoSubmitTimeout() {
+  if (state.hasSubmitted) return;
+  state.hasSubmitted = true;
+  state.mySubmission = { guess: null, skipped: false, timedOut: true };
+  send({ type: "submit", guess: null, skipped: false, timedOut: true });
+  renderGame();
+  if (state.isHost) maybeResolveRound();
+}
+
+// ============================================================
+// KEYPAD - with single-digit delete
+// ============================================================
+document.querySelectorAll(".key[data-k]").forEach(k => {
+  k.addEventListener("click", () => onKey(k.dataset.k));
+});
+document.getElementById("key-submit").addEventListener("click", submitGuess);
+document.getElementById("btn-skip").addEventListener("click", useSkip);
+
+function onKey(k) {
+  if (state.hasSubmitted) return;
+  fxKeyPress();
+  if (k === "back") {
+    // Delete a single digit
+    state.pendingGuess = state.pendingGuess.slice(0, -1);
+  } else {
+    if (state.pendingGuess.length >= 10) return;
+    if (state.pendingGuess === "0") state.pendingGuess = "";
+    state.pendingGuess += k;
+  }
+  renderGame();
+}
+
+function submitGuess() {
+  if (state.hasSubmitted || !state.pendingGuess) return;
+  // Anti-bluff: in pressure mode, require minimum time before submit
+  const elapsed = (Date.now() - state.roundStartTime) / 1000;
+  if (state.selectedMode === "pressure" && elapsed < MIN_SUBMIT_TIME) {
+    showToast(`חכה לפחות ${MIN_SUBMIT_TIME} שניות לפני שליחה`);
+    return;
+  }
+  const guess = parseInt(state.pendingGuess, 10);
+  if (isNaN(guess)) return;
+  state.hasSubmitted = true;
+  state.mySubmission = { guess, skipped: false };
+  fxSubmit();
+  send({ type: "submit", guess, skipped: false });
+  renderGame();
+  if (state.isHost) maybeResolveRound();
+}
+
+function useSkip() {
+  if (state.hasSubmitted || state.mySkipStars < 3) return;
+  state.mySkipStars -= 3;
+  state.hasSubmitted = true;
+  state.mySubmission = { guess: null, skipped: true };
+  fxSubmit();
+  send({ type: "submit", guess: null, skipped: true });
+  renderGame();
+  if (state.isHost) maybeResolveRound();
+}
+
+// Physical keyboard support
+document.addEventListener("keydown", (e) => {
+  if (!document.getElementById("screen-game").classList.contains("active")) return;
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (state.hasSubmitted) return;
+  if (e.key >= "0" && e.key <= "9") { onKey(e.key); e.preventDefault(); }
+  else if (e.key === "Backspace") { onKey("back"); e.preventDefault(); }
+  else if (e.key === "Enter") { submitGuess(); e.preventDefault(); }
+});
+
+// ============================================================
+// HOST: ROUND RESOLUTION (enforces game rules)
+// ============================================================
+function maybeResolveRound() {
+  if (!state.isHost) return;
+  if (state.mySubmission && state.oppSubmission) {
+    resolveRound();
+  } else {
+    if (state.resolveTimer) clearTimeout(state.resolveTimer);
+    state.resolveTimer = setTimeout(() => {
+      if (Date.now() >= state.deadlineAt) {
+        if (!state.mySubmission) {
+          state.mySubmission = { guess: null, skipped: false, timedOut: true };
+          state.hasSubmitted = true;
+        }
+        if (!state.oppSubmission) state.oppSubmission = { guess: null, skipped: false, timedOut: true };
+        resolveRound();
+      } else {
+        maybeResolveRound();
+      }
+    }, Math.max(100, state.deadlineAt - Date.now() + 200));
+  }
+}
+
+function resolveRound() {
+  const q = state.currentQuestion;
+  if (!q) return;
+  const me = state.mySubmission || { guess: null, skipped: false };
+  const opp = state.oppSubmission || { guess: null, skipped: false };
+
+  const myDiff = me.guess === null || me.skipped ? Infinity : Math.abs(q.answer - me.guess);
+  const oppDiff = opp.guess === null || opp.skipped ? Infinity : Math.abs(q.answer - opp.guess);
+
+  let winner = null;
+  let bullseye = false;
+  if (myDiff === Infinity && oppDiff === Infinity) winner = null;
+  else if (myDiff < oppDiff) { winner = "me"; bullseye = myDiff === 0; }
+  else if (oppDiff < myDiff) { winner = "opp"; bullseye = oppDiff === 0; }
+  else winner = "tie";
+
+  if (winner === "me") {
+    state.myScore += bullseye ? 2 : 1;
+    if (bullseye) state.mySkipStars += 1;
+  } else if (winner === "opp") {
+    state.oppScore += bullseye ? 2 : 1;
+    if (bullseye) state.oppSkipStars += 1;
+  } else if (winner === "tie") {
+    state.myScore += 1;
+    state.oppScore += 1;
+  }
+
+  state.history.push({
+    round: state.roundNum,
+    question: q.question, answer: q.answer, unit: q.unit,
+    category: q.category, difficulty: q.difficulty,
+    explanation: q.explanation, source: q.source,
+    myGuess: me.guess, mySkipped: me.skipped,
+    oppGuess: opp.guess, oppSkipped: opp.skipped,
+    winner, bullseye
+  });
+
+  // === ENFORCE RULES: must reach TARGET_SCORE with WIN_MARGIN ===
+  const matchOver = checkMatchEnd();
+
+  const result = {
+    answer: q.answer, unit: q.unit, question: q.question,
+    explanation: q.explanation, source: q.source,
+    myScore: state.myScore, mySkipStars: state.mySkipStars,
+    oppScore: state.oppScore, oppSkipStars: state.oppSkipStars,
+    hostGuess: me.guess, hostSkipped: me.skipped,
+    clientGuess: opp.guess, clientSkipped: opp.skipped,
+    hostWon: winner === "me", clientWon: winner === "opp", tie: winner === "tie",
+    bullseye, round: state.roundNum
+  };
+
+  if (matchOver) {
+    const finalState = {
+      hostScore: state.myScore, clientScore: state.oppScore,
+      hostName: state.playerName, clientName: state.oppName,
+      hostWon: state.myScore > state.oppScore,
+      history: state.history
+    };
+    send({ type: "end", result, finalState });
+    applyResolution(result);
+    setTimeout(() => showEndScreen(finalState), 200);
+  } else {
+    send({ type: "resolve", result });
+    applyResolution(result);
+  }
+}
+
+function checkMatchEnd() {
+  // Tennis-style: reach TARGET_SCORE AND lead by WIN_MARGIN
+  const max = Math.max(state.myScore, state.oppScore);
+  const min = Math.min(state.myScore, state.oppScore);
+  return max >= TARGET_SCORE && (max - min) >= WIN_MARGIN;
+}
+
+// ============================================================
+// APPLY RESOLUTION
+// ============================================================
+function applyResolution(result) {
+  if (state.localTimer) cancelAnimationFrame(state.localTimer);
+  if (!state.isHost) {
+    state.myScore = result.clientScore;
+    state.mySkipStars = result.clientSkipStars;
+    state.oppScore = result.hostScore;
+    state.oppSkipStars = result.hostSkipStars;
+    state.history.push({
+      round: result.round,
+      question: result.question, answer: result.answer, unit: result.unit,
+      category: result.unit ? state.currentQuestion?.category : null,
+      difficulty: state.currentQuestion?.difficulty,
+      explanation: result.explanation, source: result.source,
+      myGuess: result.clientGuess, mySkipped: result.clientSkipped,
+      oppGuess: result.hostGuess, oppSkipped: result.hostSkipped,
+      winner: result.clientWon ? "me" : (result.hostWon ? "opp" : (result.tie ? "tie" : null)),
+      bullseye: result.bullseye
+    });
+  }
+  // Sound effects based on result
+  const iWon = state.isHost ? result.hostWon : result.clientWon;
+  if (result.bullseye && iWon) fxBullseye();
+  else if (iWon) fxWin();
+  else if (!result.tie && result.bullseye) fxLose();
+
+  showReveal(result);
+}
+
+function showReveal(result) {
+  showScreen("reveal");
+  document.getElementById("reveal-round-pill").textContent = "סבב " + result.round;
+  document.getElementById("reveal-question").textContent = result.question;
+  document.getElementById("reveal-unit").textContent = result.unit || "";
+  document.getElementById("reveal-explain").textContent = result.explanation || "";
+  const srcEl = document.getElementById("reveal-source");
+  if (result.source) { srcEl.href = result.source; srcEl.style.display = ""; }
+  else srcEl.style.display = "none";
+
+  animateNumber(document.getElementById("reveal-answer"), 0, result.answer, 1200);
+
+  const myGuess = state.isHost ? result.hostGuess : result.clientGuess;
+  const mySkipped = state.isHost ? result.hostSkipped : result.clientSkipped;
+  const oppGuess = state.isHost ? result.clientGuess : result.hostGuess;
+  const oppSkipped = state.isHost ? result.clientSkipped : result.hostSkipped;
+  const iWon = state.isHost ? result.hostWon : result.clientWon;
+  const oppWon = state.isHost ? result.clientWon : result.hostWon;
+
+  const c = document.getElementById("reveal-guesses");
+  c.innerHTML = "";
+  c.appendChild(guessCard(state.playerName + " (אתה)", myGuess, mySkipped, iWon || result.tie, iWon && result.bullseye, result.answer));
+  c.appendChild(guessCard(state.oppName || "יריב", oppGuess, oppSkipped, oppWon || result.tie, oppWon && result.bullseye, result.answer));
+
+  const nextBtn = document.getElementById("btn-next");
+  if (state.isHost) {
+    nextBtn.style.display = "";
+    nextBtn.disabled = false;
+    nextBtn.textContent = "סבב הבא →";
+    nextBtn.onclick = async () => {
+      nextBtn.disabled = true;
+      state.roundNum += 1;
+      await startNextRound(false);
+    };
+  } else {
+    nextBtn.style.display = "";
+    nextBtn.disabled = true;
+    nextBtn.textContent = "ממתין למארח...";
+  }
+}
+
+function guessCard(name, guess, skipped, winner, bullseye, answer) {
+  const card = document.createElement("div");
+  card.className = "guess-card reveal-anim" + (winner ? (bullseye ? " bullseye" : " winner") : "");
+  let valHtml = "";
+  if (skipped) valHtml = `<div class="guess-card-value null">דילג</div>`;
+  else if (guess === null) valHtml = `<div class="guess-card-value null">לא ענה</div>`;
+  else {
+    const diff = Math.abs(answer - guess);
+    valHtml = `<div class="guess-card-value">${Number(guess).toLocaleString('he-IL')}</div><div class="guess-card-diff">סטה ב-${Number(diff).toLocaleString('he-IL')}</div>`;
+  }
+  let badge = "";
+  if (bullseye) badge = `<div class="guess-card-badge badge-bullseye">★ פגיעה מדויקת +2</div>`;
+  else if (winner) badge = `<div class="guess-card-badge badge-win">קרוב +1</div>`;
+  card.innerHTML = `<div class="guess-card-name">${escapeHtml(name)}</div>${valHtml}${badge}`;
+  return card;
+}
+function animateNumber(el, from, to, duration) {
+  const start = performance.now();
+  function frame(t) {
+    const pct = Math.min(1, (t - start) / duration);
+    const eased = 1 - Math.pow(1 - pct, 3);
+    const val = Math.round(from + (to - from) * eased);
+    el.textContent = Number(val).toLocaleString('he-IL');
+    if (pct < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+// ============================================================
+// END SCREEN
+// ============================================================
+function showEndScreen(finalState) {
+  showScreen("end");
+  const myWon = state.isHost ? finalState.hostWon : !finalState.hostWon;
+  document.getElementById("end-trophy").textContent = myWon ? "🏆" : "🎯";
+  document.getElementById("end-winner-name").textContent = myWon ? "אתה" : (state.oppName || "היריב");
+  const myFinal = state.isHost ? finalState.hostScore : finalState.clientScore;
+  const oppFinal = state.isHost ? finalState.clientScore : finalState.hostScore;
+  document.getElementById("end-score").textContent = `${myFinal} — ${oppFinal}`;
+
+  // Match stats
+  const hist = finalState.history || state.history;
+  const myBullseyes = hist.filter(h => h.bullseye && (state.isHost ? h.winner === "me" : h.winner === "me")).length;
+  const mySkips = hist.filter(h => state.isHost ? h.mySkipped : h.oppSkipped).length;
+  document.getElementById("stat-rounds").textContent = hist.length;
+  document.getElementById("stat-bullseyes").textContent = myBullseyes;
+  document.getElementById("stat-skips").textContent = mySkips;
+
+  // Update lifetime stats
+  state.myStats.matches += 1;
+  if (myWon) state.myStats.wins += 1;
+  state.myStats.bullseyes += myBullseyes;
+  state.myStats.totalRounds += hist.length;
+  saveSettings();
+
+  // Win/lose sound
+  if (myWon) fxWin(); else fxLose();
+
+  const list = document.getElementById("review-list");
+  list.innerHTML = "";
+  hist.forEach(h => {
+    const item = document.createElement("div");
+    item.className = "review-item";
+    item.innerHTML = `
+      <div class="review-meta">
+        ${h.category ? `<div class="chip">${escapeHtml(h.category)}</div>` : ""}
+        ${h.difficulty ? `<div class="chip diff-${h.difficulty}">${h.difficulty}</div>` : ""}
+      </div>
+      <div class="review-q"><strong>סבב ${h.round}:</strong> ${escapeHtml(h.question)}</div>
+      <div class="review-a">
+        <span>תשובה: <strong>${Number(h.answer).toLocaleString('he-IL')} ${escapeHtml(h.unit||"")}</strong></span>
+        ${h.source ? `<a href="${escapeHtml(h.source)}" target="_blank" rel="noopener">מקור ↗</a>` : ""}
+      </div>
+    `;
+    list.appendChild(item);
+  });
+
+  document.getElementById("btn-rematch").onclick = () => {
+    if (state.isHost) {
+      send({ type: "rematch_accept" });
+      resetMatchState();
+      renderLobby();
+      showScreen("lobby");
+    } else {
+      send({ type: "rematch_request" });
+      showToast("ממתין למארח...");
+    }
+  };
+}
+document.getElementById("btn-home").addEventListener("click", () => { send({ type: "leave" }); leaveRoom(); });
+
+// ============================================================
+// LEAVE
+// ============================================================
+function leaveRoom() {
+  try { if (state.conn) state.conn.close(); } catch{}
+  try { if (state.peer) state.peer.destroy(); } catch{}
+  state.peer = null; state.conn = null;
+  state.roomCode = null; state.oppName = "";
+  resetMatchState();
+  state.isHost = false;
+  document.getElementById("conn-status").textContent = "לא מחובר";
+  document.getElementById("conn-status").classList.remove("connected","error");
+  showScreen("home");
+}
+
+// ============================================================
+// SETTINGS, STATS, ADD QUESTION, IMPORT CSV (compact versions)
+// ============================================================
+function openSettings() {
+  const modal = document.getElementById("modal");
+  document.getElementById("modal-title").textContent = "הגדרות";
+  const totalQ = EMBEDDED_QUESTIONS.length + state.customQuestions.length;
+  const apiConnected = state.apiConfig && state.apiConfig.key;
+  document.getElementById("modal-content").innerHTML = `
+    <div class="modal-text">
+      <div class="info-box">
+        ${apiConnected ? `מחובר ל-${state.apiConfig.provider} - שאלות חיות` : `שאלות ממסד מובנה (${totalQ} שאלות)`}<br>
+        ${state.customQuestions.length > 0 ? `כולל ${state.customQuestions.length} שאלות שלך` : ""}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn btn-secondary" id="btn-api-settings">חיבור מודל שפה (LLM)</button>
+      <button class="btn btn-secondary" id="btn-add-q">הוסף שאלה חדשה</button>
+      <button class="btn btn-secondary" id="btn-import-csv">יבוא קובץ CSV</button>
+      <button class="btn btn-secondary" id="btn-export-csv">ייצוא לCSV</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px;padding:12px;background:var(--surface-2);border-radius:10px;">
+      <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;cursor:pointer;">
+        <span>🔊 צלילים</span>
+        <input type="checkbox" id="toggle-sound" ${state.soundEnabled ? "checked" : ""} style="width:40px;height:20px;">
+      </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;cursor:pointer;">
+        <span>📳 רטט</span>
+        <input type="checkbox" id="toggle-vib" ${state.vibrationEnabled ? "checked" : ""} style="width:40px;height:20px;">
+      </label>
+      <label style="display:flex;justify-content:space-between;align-items:center;font-size:13px;cursor:pointer;">
+        <span>✓ אימות LLM כפול (בטוח יותר, איטי יותר)</span>
+        <input type="checkbox" id="toggle-validate" ${state.llmValidation ? "checked" : ""} style="width:40px;height:20px;">
+      </label>
+    </div>
+    <button class="btn-ghost" id="btn-close-modal" style="width:100%;margin-top:12px;">סגור</button>
+  `;
+  modal.classList.add("show");
+  document.getElementById("btn-close-modal").onclick = () => modal.classList.remove("show");
+  document.getElementById("btn-api-settings").onclick = openApiSettings;
+  document.getElementById("btn-add-q").onclick = openAddQuestion;
+  document.getElementById("btn-import-csv").onclick = openImportCsv;
+  document.getElementById("btn-export-csv").onclick = exportToCsv;
+  document.getElementById("toggle-sound").onchange = (e) => { state.soundEnabled = e.target.checked; saveSettings(); };
+  document.getElementById("toggle-vib").onchange = (e) => { state.vibrationEnabled = e.target.checked; saveSettings(); };
+  document.getElementById("toggle-validate").onchange = (e) => { state.llmValidation = e.target.checked; saveSettings(); };
+}
+
+function showMyStats() {
+  const modal = document.getElementById("modal");
+  document.getElementById("modal-title").textContent = "הסטטיסטיקות שלי";
+  const winRate = state.myStats.matches > 0 ? Math.round((state.myStats.wins / state.myStats.matches) * 100) : 0;
+  const bullseyeRate = state.myStats.totalRounds > 0 ? Math.round((state.myStats.bullseyes / state.myStats.totalRounds) * 100) : 0;
+  document.getElementById("modal-content").innerHTML = `
+    <div class="stats-row" style="margin-bottom:16px;">
+      <div class="stat-card"><div class="stat-num">${state.myStats.matches}</div><div class="stat-label">משחקים</div></div>
+      <div class="stat-card"><div class="stat-num">${state.myStats.wins}</div><div class="stat-label">ניצחונות</div></div>
+      <div class="stat-card"><div class="stat-num">${winRate}%</div><div class="stat-label">אחוז ניצחון</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-num">${state.myStats.totalRounds}</div><div class="stat-label">סבבים</div></div>
+      <div class="stat-card"><div class="stat-num">${state.myStats.bullseyes}</div><div class="stat-label">פגיעות מדויקות</div></div>
+      <div class="stat-card"><div class="stat-num">${bullseyeRate}%</div><div class="stat-label">דיוק</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btn-reset-stats">איפוס נתונים</button>
+      <button class="btn btn-primary" id="btn-stats-close">סגור</button>
+    </div>
+  `;
+  modal.classList.add("show");
+  document.getElementById("btn-stats-close").onclick = () => modal.classList.remove("show");
+  document.getElementById("btn-reset-stats").onclick = () => {
+    if (confirm("לאפס את כל הסטטיסטיקות?")) {
+      state.myStats = { matches: 0, wins: 0, bullseyes: 0, totalRounds: 0 };
+      saveSettings();
+      showMyStats();
+    }
+  };
+}
+
+function openApiSettings() {
+  const modal = document.getElementById("modal");
+  const cfg = state.apiConfig || {};
+  document.getElementById("modal-title").textContent = "חיבור מודל שפה";
+  document.getElementById("modal-content").innerHTML = `
+    <div class="modal-text">חבר API key למודל שפה כדי שכל סבב יווצרו שאלות חדשות ומקוריות. המפתח נשמר רק במכשיר.</div>
+    <div class="warning-box"><strong>שים לב:</strong> רק <strong>המארח</strong> צריך לחבר API key. השאלות נשלחות אוטומטית לחבר.</div>
+    <div class="field-group">
+      <label class="field-label">ספק</label>
+      <div class="mode-toggle" id="provider-toggle" style="grid-template-columns: 1fr 1fr 1fr;">
+        <div class="mode-option ${cfg.provider==='openai'?'active':''}" data-provider="openai"><span class="mode-label">OpenAI</span>GPT</div>
+        <div class="mode-option ${cfg.provider==='anthropic'?'active':''}" data-provider="anthropic"><span class="mode-label">Anthropic</span>Claude</div>
+        <div class="mode-option ${cfg.provider==='gemini'?'active':''}" data-provider="gemini"><span class="mode-label">Google</span>Gemini</div>
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">API Key</label>
+      <input class="text-input" id="api-key-input" type="password" placeholder="sk-..." value="${cfg.key || ''}" autocomplete="off" dir="ltr">
+    </div>
+    <div class="field-group">
+      <label class="field-label">מודל (אופציונלי)</label>
+      <input class="text-input" id="api-model-input" placeholder="ברירת מחדל לפי הספק" value="${cfg.model || ''}" autocomplete="off" dir="ltr">
+      <div style="font-size:11px;color:var(--text-muted);">דוגמאות: gpt-4o-mini, claude-haiku-4-5, gemini-1.5-flash</div>
+    </div>
+    <div class="info-box" style="text-align:right;">
+      <strong>איפה משיגים API key?</strong><br>
+      • OpenAI: platform.openai.com/api-keys<br>
+      • Anthropic: console.anthropic.com<br>
+      • Google (חינם!): aistudio.google.com/apikey
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btn-api-cancel">ביטול</button>
+      <button class="btn btn-primary" id="btn-api-save">שמור</button>
+    </div>
+    ${cfg.key ? '<button class="btn-ghost" id="btn-api-clear" style="width:100%;margin-top:8px;">נתק API</button>' : ''}
+  `;
+  let selectedProvider = cfg.provider || "openai";
+  document.querySelectorAll("#provider-toggle .mode-option").forEach(opt => {
+    opt.addEventListener("click", () => {
+      document.querySelectorAll("#provider-toggle .mode-option").forEach(o => o.classList.remove("active"));
+      opt.classList.add("active");
+      selectedProvider = opt.dataset.provider;
+    });
+  });
+  document.getElementById("btn-api-cancel").onclick = openSettings;
+  document.getElementById("btn-api-save").onclick = () => {
+    const key = document.getElementById("api-key-input").value.trim();
+    const model = document.getElementById("api-model-input").value.trim();
+    if (!key) return showToast("הכנס API key");
+    state.apiConfig = { provider: selectedProvider, key, model: model || undefined };
+    saveSettings(); updateApiStatus();
+    showToast("API נשמר"); openSettings();
+  };
+  if (document.getElementById("btn-api-clear")) {
+    document.getElementById("btn-api-clear").onclick = () => {
+      state.apiConfig = null; saveSettings(); updateApiStatus();
+      showToast("API נותק"); openSettings();
+    };
+  }
+}
+
+function openAddQuestion() {
+  const modal = document.getElementById("modal");
+  document.getElementById("modal-title").textContent = "הוסף שאלה";
+  document.getElementById("modal-content").innerHTML = `
+    <div class="modal-text">השאלות שלך נשמרות מקומית. התשובה חייבת להיות מספר שלם.</div>
+    <div class="field-group"><label class="field-label">קטגוריה</label><select class="text-input" id="aq-cat">${ALL_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}</select></div>
+    <div class="field-group"><label class="field-label">רמת קושי</label><select class="text-input" id="aq-diff">${ALL_DIFFICULTIES.map(d => `<option value="${d}">${d}</option>`).join("")}</select></div>
+    <div class="field-group"><label class="field-label">השאלה</label><textarea class="text-input" id="aq-q" rows="3"></textarea></div>
+    <div class="field-group"><label class="field-label">תשובה (מספר שלם)</label><input class="text-input" id="aq-a" type="number" inputmode="numeric"></div>
+    <div class="field-group"><label class="field-label">יחידה</label><input class="text-input" id="aq-u"></div>
+    <div class="field-group"><label class="field-label">הסבר</label><textarea class="text-input" id="aq-e" rows="2"></textarea></div>
+    <div class="field-group"><label class="field-label">קישור (אופציונלי)</label><input class="text-input" id="aq-s" type="url" dir="ltr"></div>
+    <div class="modal-actions"><button class="btn btn-secondary" id="btn-aq-cancel">ביטול</button><button class="btn btn-primary" id="btn-aq-save">שמור</button></div>
+  `;
+  document.getElementById("btn-aq-cancel").onclick = openSettings;
+  document.getElementById("btn-aq-save").onclick = () => {
+    const q = document.getElementById("aq-q").value.trim();
+    const a = parseInt(document.getElementById("aq-a").value, 10);
+    if (!q) return showToast("הכנס שאלה");
+    if (isNaN(a)) return showToast("תשובה חייבת להיות מספר שלם");
+    state.customQuestions.push({
+      id: "custom_" + Date.now() + "_" + Math.random().toString(36).slice(2,6),
+      category: document.getElementById("aq-cat").value,
+      difficulty: document.getElementById("aq-diff").value,
+      question: q, answer: a,
+      unit: document.getElementById("aq-u").value.trim(),
+      explanation: document.getElementById("aq-e").value.trim(),
+      source: document.getElementById("aq-s").value.trim()
+    });
+    saveSettings(); updateApiStatus(); showToast("השאלה נוספה"); openSettings();
+  };
+}
+
+function openImportCsv() {
+  const modal = document.getElementById("modal");
+  document.getElementById("modal-title").textContent = "יבוא CSV";
+  document.getElementById("modal-content").innerHTML = `
+    <div class="modal-text">ייבא קובץ CSV עם שאלות. שורה ראשונה תידחה (כותרת).</div>
+    <div class="info-box" style="font-family:monospace;font-size:11px;direction:ltr;text-align:left;">category,difficulty,question,answer,unit,explanation,source</div>
+    <button class="btn btn-secondary" id="btn-dl-template" style="margin-bottom:10px;">הורד תבנית CSV</button>
+    <div class="file-input-wrap"><button class="btn btn-primary">בחר קובץ CSV</button><input type="file" accept=".csv,text/csv" id="csv-file-input"></div>
+    <button class="btn-ghost" id="btn-csv-back" style="width:100%;margin-top:12px;">חזרה</button>
+  `;
+  document.getElementById("btn-csv-back").onclick = openSettings;
+  document.getElementById("btn-dl-template").onclick = downloadCsvTemplate;
+  document.getElementById("csv-file-input").addEventListener("change", handleCsvFile);
+}
+
+function downloadCsvTemplate() {
+  const csv = "category,difficulty,question,answer,unit,explanation,source\n" +
+    "גאוגרפיה,קל,\"כמה ימים יש בשנה?\",365,ימים,\"שנה רגילה כוללת 365 ימים\",https://example.com\n";
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "numeral_duel_template.csv"; a.click();
+  URL.revokeObjectURL(url); showToast("תבנית הורדה");
+}
+
+function handleCsvFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    let text = ev.target.result;
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    const rows = parseCsv(text);
+    if (rows.length < 2) return showToast("הקובץ ריק");
+    let added = 0, errors = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row.length < 4 || !row[2]) continue;
+      const answer = parseInt(row[3], 10);
+      if (isNaN(answer)) { errors++; continue; }
+      state.customQuestions.push({
+        id: "csv_" + Date.now() + "_" + i,
+        category: row[0]?.trim() || "אחר",
+        difficulty: row[1]?.trim() || "בינוני",
+        question: row[2]?.trim() || "", answer,
+        unit: row[4]?.trim() || "",
+        explanation: row[5]?.trim() || "",
+        source: row[6]?.trim() || ""
+      });
+      added++;
+    }
+    saveSettings(); updateApiStatus();
+    showToast(`נוספו ${added} שאלות${errors ? ` (${errors} דחויות)` : ""}`);
+    openSettings();
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+function parseCsv(text) {
+  const rows = [];
+  let row = [], field = "", inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (c === '"') inQuotes = false;
+      else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ",") { row.push(field); field = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (field || row.length) { row.push(field); rows.push(row); }
+        row = []; field = "";
+        if (c === "\r" && text[i+1] === "\n") i++;
+      } else field += c;
+    }
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function exportToCsv() {
+  const all = [...EMBEDDED_QUESTIONS, ...state.customQuestions];
+  const escape = s => {
+    s = String(s || "");
+    if (s.includes('"') || s.includes(",") || s.includes("\n")) return '"' + s.replace(/"/g,'""') + '"';
+    return s;
+  };
+  const lines = all.map(q => [q.category, q.difficulty, q.question, q.answer, q.unit, q.explanation, q.source].map(escape).join(","));
+  const csv = "\ufeff" + "category,difficulty,question,answer,unit,explanation,source\n" + lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "numeral_duel_questions.csv"; a.click();
+  URL.revokeObjectURL(url); showToast(all.length + " שאלות יוצאו");
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function showToast(msg, ms = 2500) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._hide);
+  t._hide = setTimeout(() => t.classList.remove("show"), ms);
+}
+
+// Initial UI setup
+updateApiStatus();
+
+</script>
+
+</body>
+</html>
